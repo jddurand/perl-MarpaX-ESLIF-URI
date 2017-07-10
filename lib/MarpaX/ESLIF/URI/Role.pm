@@ -12,22 +12,19 @@ use strictures 2;
 use Carp qw/croak/;
 use MarpaX::ESLIF::URI::Grammar;
 
-requires 'input';
-requires 'encoding';
-requires 'scheme';
-requires 'authority';
-requires 'path';
-requires 'query';
-requires 'fragment';
-requires 'start';    # Starting point in the grammar
+has scheme    => (is => 'rwp');
+has authority => (is => 'rwp');
+has path      => (is => 'rwp');
+has query     => (is => 'rwp');
+has fragment  => (is => 'rwp');
 
 sub BUILD {
   my ($self, $args) = @_;
 
   my $parse = MarpaX::ESLIF::URI::Grammar->parse(
-                                                 start    => $self->{start},
-                                                 input    => $args->{input},
-                                                 encoding => $args->{encoding},
+                                                 start    => delete $args->{start},
+                                                 input    => delete $args->{input},
+                                                 encoding => delete $args->{encoding},
                                                  logger   => $self->_logger
                                                 );
 
