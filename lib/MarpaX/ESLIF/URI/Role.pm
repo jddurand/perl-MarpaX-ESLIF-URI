@@ -9,29 +9,40 @@ package MarpaX::ESLIF::URI::Role;
 use Moo::Role;
 use strictures 2;
 
-use Carp qw/croak/;
-use Types::Standard qw/Str Undef ArrayRef/;
-
 #
 # The three main entry points: URI, Reference and Absolute all have
 # in common these three attributes
 #
-has 'authority' => (is => 'rw', isa => Str|Undef);                         # String or undef
-has 'path'      => (is => 'rw', isa => Str,     , default => sub { '' });  # String, always defined
-has 'query'     => (is => 'rw', isa => Str|Undef);                         # Sring or undef
+has 'authority' => (is => 'rw', trigger_ => _parse);
+has 'path'      => (is => 'rw', trigger_ => _parse);
+has 'query'     => (is => 'rw', trigger_ => _parse);
 #
-# They all share the same constraint:
-# When authority is present, the path must either be empty or begin with a slash ("/") character.  When
-# authority is not present, the path cannot begin with two slash characters ("//").
+# All attributes have a trigger that requires a grammar and a parser
+# Parse result will always be a hash whose keys are attributes to fill
 #
-after authority => sub {
-    my ($self, $authority) = @_;
+requires 'grammar';
+requires 'parse';
+#
+# Always parse also after construction (triggers are not called at build time)
+#
+sub BUILD {
+    my ($self) = @_;
 
-    my $path = $self->path;
-    if (defined($authority)) {
-        croak 'When authority is present, path must either be empty or begin with a slash ("/") character' unless ((! length($path)) || substr($path, 0, 1) eq '/')
-    } else {
-        croak 'When authority is not present, path cannot begin with two slash characters ("//")' if (substr($path, 0, 2) eq '//')
+    $self->parse
+}
+#
+# Parse result is always a hash whose keys will be the attributes to set
+#
+sub parse {
+    my ($self) = @_;
+
+    my $recognizerInterface = MarpaX::ESLIF::URI::Grammar::Recognizer->new($self->toString);
+    my $valueInterface = MarpaX::ESLIF::URI::Grammar::Value->new();
+    $self->grammar->parse();
+    my $result = $valueInterface->getResult;
+
+    foreach my $attribute (keys %{$result}) {
+        $self->$attribute($result->{$attribute}) # Will croak if we made an error -;
     }
 }
 
