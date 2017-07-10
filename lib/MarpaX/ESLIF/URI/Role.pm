@@ -21,23 +21,20 @@ requires 'query';
 requires 'fragment';
 requires 'start';    # Starting point in the grammar
 
-around BUILDARGS => sub {
-  my ($orig, $class, @args) = @_;
-
-  return { input => $args[0] } if @args == 1 && !ref $args[0];
-
-  return $class->$orig(@args);
-};
-
 sub BUILD {
   my ($self, $args) = @_;
 
-  my $parseResult = MarpaX::ESLIF::URI::Grammar->parse(
-                                                       start    => $self->start,
-                                                       input    => $args->{input},
-                                                       encoding => $args->{encoding},
-                                                       logger   => $self->_logger
-                                                      );
+  my $parse = MarpaX::ESLIF::URI::Grammar->parse(
+                                                 start    => $self->{start},
+                                                 input    => $args->{input},
+                                                 encoding => $args->{encoding},
+                                                 logger   => $self->_logger
+                                                );
+
+  foreach (keys %{$parse}) {
+    my $setter = "_set_$_";
+    $self->$setter($parse->{$_})
+  }
 }
 
 #

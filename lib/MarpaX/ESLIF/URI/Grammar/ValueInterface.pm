@@ -24,7 +24,7 @@ Instantiate a new value interface object.
 sub new {
     my ($pkg, %options) = @_;
 
-    bless { result => {}, %options }, $pkg
+    bless { result => undef, tmp => {}, %options }, $pkg
 }
 
 # ----------------
@@ -87,7 +87,7 @@ Sets the current parse tree value.
 
 =cut
 
-sub setResult { $_[0]->{result} = $_[1] }
+sub setResult { $_[0]->{result} = $_[0]->{tmp} }
 
 =head1 SEE ALSO
 
@@ -104,27 +104,27 @@ L<MarpaX::ESLIF::RFC3986>
 
 sub scheme {
   my $self = shift;
-  $self->{result}->{scheme} = join('', map { $_ // '' } @_ )
+  $self->{tmp}->{scheme} = join('', map { $_ // '' } @_ )
 }
 
 sub authority {
   my $self = shift;
-  $self->{result}->{authority} = join('', map { $_ // '' } @_ )
+  $self->{tmp}->{authority} = join('', map { $_ // '' } @_ )
 }
 
 sub path {
   my $self = shift;
-  $self->{result}->{path} = join('', map { $_ // '' } @_ )
+  $self->{tmp}->{path} = join('', map { $_ // '' } @_ )
 }
 
 sub query {
   my $self = shift;
-  $self->{result}->{query} = join('', map { $_ // '' } @_ )
+  $self->{tmp}->{query} = join('', map { $_ // '' } @_ )
 }
 
 sub fragment {
   my $self = shift;
-  $self->{result}->{fragment} = join('', map { $_ // '' } @_ )
+  $self->{tmp}->{fragment} = join('', map { $_ // '' } @_ )
 }
 
 1;

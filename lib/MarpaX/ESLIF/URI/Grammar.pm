@@ -9,6 +9,7 @@ package MarpaX::ESLIF::URI::Grammar;
 
 # VERSION
 
+use Carp qw/croak/;
 use MarpaX::ESLIF;
 use MarpaX::ESLIF::URI::Grammar::RecognizerInterface;
 use MarpaX::ESLIF::URI::Grammar::ValueInterface;
@@ -50,7 +51,8 @@ sub parse {
   my $recognizerInterface = MarpaX::ESLIF::URI::Grammar::RecognizerInterface->new(data => $input, encoding => $encoding);
   my $valueInterface = MarpaX::ESLIF::URI::Grammar::ValueInterface->new();
   $grammar->parse($recognizerInterface, $valueInterface);
-  return $valueInterface->getResult
+  my $result = $valueInterface->getResult || croak 'Invalid input';
+  $result
 }
 
 1;
