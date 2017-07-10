@@ -10,30 +10,47 @@ package MarpaX::ESLIF::URI::Grammar;
 # VERSION
 
 use MarpaX::ESLIF;
+use MarpaX::ESLIF::URI::Grammar::RecognizerInterface;
+use MarpaX::ESLIF::URI::Grammar::ValueInterface;
 
 my $_DATA  = do { local $/; <DATA> };
 my $_ESLIF;
+my %_GRAMMAR;
+my %_BNF;
 
-sub get {
-    my ($class, $start, %options) = @_;
-    #
-    # Default is the URI reference
-    #
-    $start //= 'URI reference';
-    #
-    # Get grammar to compile
-    #
-    my $data = $_DATA;
-    $data =~ s/\$START/<$start>/;
-    #
-    # Unless a logger is given, use the singleton $_ESLIF
-    #
-    my $logger = delete $options{logger};
-    my $eslif = $logger ? ($_ESLIF //= MarpaX::ESLIF->new()): MarpaX::ESLIF->new($logger);
-    #
-    # Compile and return the grammar
-    #
-    MarpaX::ESLIF::Grammar->new($eslif, $data)
+sub parse {
+  my ($class, %options) = @_;
+  #
+  # Get options
+  #
+  my $start    = delete $options{start};
+  my $input    = delete $options{input};
+  my $encoding = delete $options{encoding};
+  my $logger   = delete $options{logger};
+  #
+  # Get BNF, use singleton as much as possible
+  #
+  if (! defined($_BNF{$start})) {
+    $_BNF{$start} = $_DATA;
+    $_BNF{$start} =~ s/\$START/<$start>/;
+  }
+  my $bnf = $_BNF{$start};
+  #
+  # Compile grammar, use singleton as much as possible
+  #
+  my $grammar;
+  if (defined($logger)) {
+    $grammar = MarpaX::ESLIF::Grammar->new(MarpaX::ESLIF->new($logger), $bnf)
+  } else {
+    $grammar = ($_GRAMMAR{$start} //= MarpaX::ESLIF::Grammar->new(($_ESLIF //= MarpaX::ESLIF->new()), $bnf));
+  }
+  #
+  # Parse and get result
+  #
+  my $recognizerInterface = MarpaX::ESLIF::URI::Grammar::RecognizerInterface->new(data => $input, encoding => $encoding);
+  my $valueInterface = MarpaX::ESLIF::URI::Grammar::ValueInterface->new();
+  $grammar->parse($recognizerInterface, $valueInterface);
+  return $valueInterface->getResult
 }
 
 1;
@@ -45,40 +62,40 @@ __DATA__
 # Reference: https://tools.ietf.org/html/rfc3986#appendix-A
 # Reference: https://tools.ietf.org/html/rfc6874
 #
-<URI>                    ::= <scheme> ":" <hier part> <URI query> <URI fragment>             action => URI
-<URI query>              ::= "?" <query>                                                     action => URI_query
-<URI query>              ::=                                                                 action => URI_query
-<URI fragment>           ::= "#" <fragment>                                                  action => URI_fragment
-<URI fragment>           ::=                                                                 action => URI_fragment
+<URI>                    ::= <scheme> ":" <hier part> <URI query> <URI fragment>
+<URI query>              ::= "?" <query>
+<URI query>              ::=
+<URI fragment>           ::= "#" <fragment>
+<URI fragment>           ::=
 
-<hier part>              ::= "//" <authority> <path abempty>                                 action => hier_part
-                           | <path absolute>                                                 action => hier_part
-                           | <path rootless>                                                 action => hier_part
-                           | <path empty>                                                    action => hier_part
+<hier part>              ::= "//" <authority> <path abempty>
+                           | <path absolute>
+                           | <path rootless>
+                           | <path empty>
 
-<URI reference>          ::= <URI>                                                           action => URI_reference
-                           | <relative ref>                                                  action => URI_reference
+<URI reference>          ::= <URI>
+                           | <relative ref>
 
-<absolute URI>           ::= <scheme> ":" <hier part> <URI query>                            action => absolute_URI
+<absolute URI>           ::= <scheme> ":" <hier part> <URI query>
 
-<relative ref>           ::= <relative part> <URI query> <URI fragment>                      action => relative_ref
+<relative ref>           ::= <relative part> <URI query> <URI fragment>
 
-<relative part>          ::= "//" <authority> <path abempty>                                 action => relative_part
-                           | <path absolute>                                                 action => relative_part
-                           | <path noscheme>                                                 action => relative_part
-                           | <path empty>                                                    action => relative_part
+<relative part>          ::= "//" <authority> <path abempty>
+                           | <path absolute>
+                           | <path noscheme>
+                           | <path empty>
 
 <scheme>                 ::= <ALPHA> <scheme trailer>                                        action => scheme
 <scheme trailer unit>    ::= <ALPHA> | <DIGIT> | "+" | "-" | "."
 <scheme trailer>         ::= <scheme trailer unit>*
 
-<authority userinfo>     ::= <userinfo> "@"                                                  action => authority_userinfo
-<authority userinfo>     ::=                                                                 action => authority_userinfo
-<authority port>         ::= ":" <port>                                                      action => authority_port
-<authority port>         ::=                                                                 action => authority_port
+<authority userinfo>     ::= <userinfo> "@"
+<authority userinfo>     ::=
+<authority port>         ::= ":" <port>
+<authority port>         ::=
 <authority>              ::= <authority userinfo> <host> <authority port>                    action => authority
 <userinfo unit>          ::= <unreserved> | <pct encoded> | <sub delims> | ":"
-<userinfo>               ::= <userinfo unit>*                                                action => userinfo
+<userinfo>               ::= <userinfo unit>*
 #
 # The syntax rule for host is ambiguous because it does not completely
 # distinguish between an IPv4address and a reg-name.  In order to
@@ -86,37 +103,37 @@ __DATA__
 # If host matches the rule for IPv4address, then it should be
 # considered an IPv4 address literal and not a reg-name.
 #
-<host>                   ::= <IP literal>            rank =>  0                              action => host
-                           | <IPv4address>           rank => -1                              action => host
-                           | <reg name>              rank => -2                              action => host
-<port>                   ::= <DIGIT>*                                                        action => port
+<host>                   ::= <IP literal>            rank =>  0
+                           | <IPv4address>           rank => -1
+                           | <reg name>              rank => -2
+<port>                   ::= <DIGIT>*
 
 <IP literal interior>    ::= <IPv6address> | <IPv6addrz> | <IPvFuture>
-<IP literal>             ::= "[" <IP literal interior> "]"                                   action => IP_literal
+<IP literal>             ::= "[" <IP literal interior> "]"
 <ZoneID interior>        ::= <unreserved>  | <pct encoded>
-<ZoneID>                 ::= <ZoneID interior>+                                              action => ZoneID
-<IPv6addrz>              ::= <IPv6address> "%25" <ZoneID>                        action => IPv6addrz
+<ZoneID>                 ::= <ZoneID interior>+
+<IPv6addrz>              ::= <IPv6address> "%25" <ZoneID>
 
-<IPvFuture>              ::= "v" <HEXDIG many> "." <IPvFuture trailer>                       action => IPvFuture
+<IPvFuture>              ::= "v" <HEXDIG many> "." <IPvFuture trailer>
 <IPvFuture trailer unit> ::= <unreserved> | <sub delims> | ":"
 <IPvFuture trailer>      ::= <IPvFuture trailer unit>+
 
-<IPv6address>            ::=                                   <6 h16 colon> <ls32>          action => IPv6address
-                           |                              "::" <5 h16 colon> <ls32>          action => IPv6address
-                           |                      <h16>   "::" <4 h16 colon> <ls32>          action => IPv6address
-                           |                              "::" <4 h16 colon> <ls32>          action => IPv6address
-                           |   <0 to 1 h16 colon> <h16>   "::" <3 h16 colon> <ls32>          action => IPv6address
-                           |                              "::" <3 h16 colon> <ls32>          action => IPv6address
-                           |   <0 to 2 h16 colon> <h16>   "::" <2 h16 colon> <ls32>          action => IPv6address
-                           |                              "::" <2 h16 colon> <ls32>          action => IPv6address
-                           |   <0 to 3 h16 colon> <h16>   "::" <1 h16 colon> <ls32>          action => IPv6address
-                           |                              "::" <1 h16 colon> <ls32>          action => IPv6address
-                           |   <0 to 4 h16 colon> <h16>   "::"               <ls32>          action => IPv6address
-                           |                              "::"               <ls32>          action => IPv6address
-                           |   <0 to 5 h16 colon> <h16>   "::"               <h16>           action => IPv6address
-                           |                              "::"               <h16>           action => IPv6address
-                           |   <0 to 6 h16 colon> <h16>   "::"                               action => IPv6address
-                           |                              "::"                               action => IPv6address
+<IPv6address>            ::=                                   <6 h16 colon> <ls32>
+                           |                              "::" <5 h16 colon> <ls32>
+                           |                      <h16>   "::" <4 h16 colon> <ls32>
+                           |                              "::" <4 h16 colon> <ls32>
+                           |   <0 to 1 h16 colon> <h16>   "::" <3 h16 colon> <ls32>
+                           |                              "::" <3 h16 colon> <ls32>
+                           |   <0 to 2 h16 colon> <h16>   "::" <2 h16 colon> <ls32>
+                           |                              "::" <2 h16 colon> <ls32>
+                           |   <0 to 3 h16 colon> <h16>   "::" <1 h16 colon> <ls32>
+                           |                              "::" <1 h16 colon> <ls32>
+                           |   <0 to 4 h16 colon> <h16>   "::"               <ls32>
+                           |                              "::"               <ls32>
+                           |   <0 to 5 h16 colon> <h16>   "::"               <h16>
+                           |                              "::"               <h16>
+                           |   <0 to 6 h16 colon> <h16>   "::"
+                           |                              "::"
 
 <1 h16 colon>            ::= <h16> ":"
 <2 h16 colon>            ::= <h16> ":" <h16> ":"
@@ -147,7 +164,7 @@ __DATA__
                            | <HEXDIG> <HEXDIG> <HEXDIG> <HEXDIG>
 
 <ls32>                   ::= <h16> ":" <h16> | <IPv4address>
-<IPv4address>            ::= <dec octet> "." <dec octet> "." <dec octet> "." <dec octet>   action => IPv4address
+<IPv4address>            ::= <dec octet> "." <dec octet> "." <dec octet> "." <dec octet>
 
 <dec octet>              ::= <DIGIT>                     # 0-9
                            | [\x{31}-\x{39}] <DIGIT>     # 10-99
@@ -156,13 +173,13 @@ __DATA__
                            | "25" [\x{30}-\x{35}]        # 250-255
 
 <reg name unit>          ::= <unreserved> | <pct encoded> | <sub delims>
-<reg name>               ::= <reg name unit>*                                               action => reg_name
+<reg name>               ::= <reg name unit>*
 
-<path>                   ::= <path abempty>                                                 action => path # begins with "/" or is empty
-                           | <path absolute>                                                action => path # begins with "/" but not "//"
-                           | <path noscheme>                                                action => path # begins with a non-colon segment
-                           | <path rootless>                                                action => path # begins with a segment
-                           | <path empty>                                                   action => path # zero characters
+<path>                   ::= <path abempty>                                                 # begins with "/" or is empty
+                           | <path absolute>                                                # begins with "/" but not "//"
+                           | <path noscheme>                                                # begins with a non-colon segment
+                           | <path rootless>                                                # begins with a segment
+                           | <path empty>                                                   # zero characters
 
 <path abempty unit>      ::= "/" <segment>
 <path abempty>           ::= <path abempty unit>*                                           action => path
@@ -172,10 +189,10 @@ __DATA__
 <path rootless>          ::= <segment nz> <path abempty>                                    action => path
 <path empty>             ::=                                                                action => path
 
-<segment>                ::= <pchar>*                                                       action => segment
-<segment nz>             ::= <pchar>+                                                       action => segment_nz
+<segment>                ::= <pchar>*
+<segment nz>             ::= <pchar>+
 <segment nz nc unit>     ::= <unreserved> | <pct encoded> | <sub delims> | "@" # non-zero-length segment without any colon ":"
-<segment nz nc>          ::= <segment nz nc unit>+                                          action => segment_nz_nc
+<segment nz nc>          ::= <segment nz nc unit>+
 
 <pchar>                  ::= <unreserved> | <pct encoded> | <sub delims> | ":" | "@"
 

@@ -9,41 +9,35 @@ package MarpaX::ESLIF::URI::Role;
 use Moo::Role;
 use strictures 2;
 
-#
-# The three main entry points: URI, Reference and Absolute all have
-# in common these three attributes
-#
-has 'authority' => (is => 'rw', trigger_ => _parse);
-has 'path'      => (is => 'rw', trigger_ => _parse);
-has 'query'     => (is => 'rw', trigger_ => _parse);
-#
-# All attributes have a trigger that requires a grammar and a parser
-# Parse result will always be a hash whose keys are attributes to fill
-#
-requires 'grammar';
-requires 'parse';
-#
-# Always parse also after construction (triggers are not called at build time)
-#
+use Carp qw/croak/;
+use MarpaX::ESLIF::URI::Grammar;
+
+requires 'input';
+requires 'encoding';
+requires 'scheme';
+requires 'authority';
+requires 'path';
+requires 'query';
+requires 'fragment';
+requires 'start';    # Starting point in the grammar
+
+around BUILDARGS => sub {
+  my ($orig, $class, @args) = @_;
+
+  return { input => $args[0] } if @args == 1 && !ref $args[0];
+
+  return $class->$orig(@args);
+};
+
 sub BUILD {
-    my ($self) = @_;
+  my ($self, $args) = @_;
 
-    $self->parse
-}
-#
-# Parse result is always a hash whose keys will be the attributes to set
-#
-sub parse {
-    my ($self) = @_;
-
-    my $recognizerInterface = MarpaX::ESLIF::URI::Grammar::Recognizer->new($self->toString);
-    my $valueInterface = MarpaX::ESLIF::URI::Grammar::Value->new();
-    $self->grammar->parse();
-    my $result = $valueInterface->getResult;
-
-    foreach my $attribute (keys %{$result}) {
-        $self->$attribute($result->{$attribute}) # Will croak if we made an error -;
-    }
+  my $parseResult = MarpaX::ESLIF::URI::Grammar->parse(
+                                                       start    => $self->start,
+                                                       input    => $args->{input},
+                                                       encoding => $args->{encoding},
+                                                       logger   => $self->_logger
+                                                      );
 }
 
 #
@@ -68,7 +62,6 @@ sub toString {
     return $string
 }
 
-requires 'encode';       # Producer
-requires 'decode';       # Consumer
+with qw/MooX::Role::Logger/;
 
 1;
