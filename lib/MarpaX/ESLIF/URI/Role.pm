@@ -28,9 +28,9 @@ sub BUILD {
                                                  logger   => $self->_logger
                                                 );
 
-  foreach (keys %{$parse}) {
+  foreach (qw/scheme authority path query fragment/) {
     my $setter = "_set_$_";
-    $self->$setter($parse->{$_})
+    $self->$setter($parse->{$_})    # If is is undef, this is what we want
   }
 }
 
