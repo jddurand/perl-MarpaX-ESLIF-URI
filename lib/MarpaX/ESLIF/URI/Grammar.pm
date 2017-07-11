@@ -97,7 +97,7 @@ __DATA__
 <authority port>         ::=
 <authority>              ::= <authority userinfo> <host> <authority port>                    action => authority
 <userinfo unit>          ::= <unreserved> | <pct encoded> | <sub delims> | ":"
-<userinfo>               ::= <userinfo unit>*
+<userinfo>               ::= <userinfo unit>*                                                action => userinfo
 #
 # The syntax rule for host is ambiguous because it does not completely
 # distinguish between an IPv4address and a reg-name.  In order to
@@ -105,10 +105,10 @@ __DATA__
 # If host matches the rule for IPv4address, then it should be
 # considered an IPv4 address literal and not a reg-name.
 #
-<host>                   ::= <IP literal>            rank =>  0
-                           | <IPv4address>           rank => -1
-                           | <reg name>              rank => -2
-<port>                   ::= <DIGIT>*
+<host>                   ::= <IP literal>            rank =>  0                              action => host
+                           | <IPv4address>           rank => -1                              action => host
+                           | <reg name>              rank => -2                              action => host
+<port>                   ::= <DIGIT>*                                                        action => port
 
 <IP literal interior>    ::= <IPv6address> | <IPv6addrz> | <IPvFuture>
 <IP literal>             ::= "[" <IP literal interior> "]"
@@ -191,10 +191,10 @@ __DATA__
 <path rootless>          ::= <segment nz> <path abempty>                                    action => path
 <path empty>             ::=                                                                action => path
 
-<segment>                ::= <pchar>*
-<segment nz>             ::= <pchar>+
+<segment>                ::= <pchar>*                                                       action => segment
+<segment nz>             ::= <pchar>+                                                       action => segment
 <segment nz nc unit>     ::= <unreserved> | <pct encoded> | <sub delims> | "@" # non-zero-length segment without any colon ":"
-<segment nz nc>          ::= <segment nz nc unit>+
+<segment nz nc>          ::= <segment nz nc unit>+                                          action => segment
 
 <pchar>                  ::= <unreserved> | <pct encoded> | <sub delims> | ":" | "@"
 

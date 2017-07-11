@@ -27,11 +27,15 @@ sub new {
     bless {
         result => undef,
         tmp => {
-            scheme => undef,
+            scheme    => undef,
             authority => undef,
-            path => undef,
-            query => undef,
-            fragment => undef
+            path      => '',                # Path is never undef per def
+            segments  => [],                # So are the segments
+            query     => undef,
+            fragment  => undef,
+            userinfo  => undef,
+            host      => undef,
+            port      => undef
         },
         %options }, $pkg
 }
@@ -126,6 +130,13 @@ sub path {
   $self->{tmp}->{path} = join('', map { $_ // '' } @_ )
 }
 
+sub segment {
+    my $self = shift;
+    my $segment = join('', map { $_ // '' } @_ );
+    push(@{$self->{tmp}->{segments}}, $segment);
+    $segment
+}
+
 sub query {
   my $self = shift;
   $self->{tmp}->{query} = join('', map { $_ // '' } @_ )
@@ -134,6 +145,21 @@ sub query {
 sub fragment {
   my $self = shift;
   $self->{tmp}->{fragment} = join('', map { $_ // '' } @_ )
+}
+
+sub userinfo {
+  my $self = shift;
+  $self->{tmp}->{userinfo} = join('', map { $_ // '' } @_ )
+}
+
+sub host {
+  my $self = shift;
+  $self->{tmp}->{host} = $_[0]
+}
+
+sub port {
+  my $self = shift;
+  $self->{tmp}->{port} = join('', map { $_ // '' } @_ )
 }
 
 1;
