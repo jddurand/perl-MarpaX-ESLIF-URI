@@ -24,7 +24,16 @@ Instantiate a new value interface object.
 sub new {
     my ($pkg, %options) = @_;
 
-    bless { result => undef, tmp => {}, %options }, $pkg
+    bless {
+        result => undef,
+        tmp => {
+            scheme => undef,
+            authority => undef,
+            path => undef,
+            query => undef,
+            fragment => undef
+        },
+        %options }, $pkg
 }
 
 # ----------------

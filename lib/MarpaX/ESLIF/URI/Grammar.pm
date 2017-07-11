@@ -24,10 +24,10 @@ sub parse {
   #
   # Get options
   #
-  my $start    = delete $options{start};
-  my $input    = delete $options{input};
-  my $encoding = delete $options{encoding};
-  my $logger   = delete $options{logger};
+  my $start    = $options{start};
+  my $input    = $options{input};
+  my $encoding = $options{encoding};
+  my $logger   = $options{logger};
   #
   # Get BNF, use singleton as much as possible
   #
@@ -51,8 +51,8 @@ sub parse {
   my $recognizerInterface = MarpaX::ESLIF::URI::Grammar::RecognizerInterface->new(data => $input, encoding => $encoding);
   my $valueInterface = MarpaX::ESLIF::URI::Grammar::ValueInterface->new();
   $grammar->parse($recognizerInterface, $valueInterface);
-  my $result = $valueInterface->getResult || croak 'Invalid input';
-  $result
+  
+  $valueInterface->getResult || croak 'Invalid input'
 }
 
 1;

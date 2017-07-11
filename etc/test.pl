@@ -25,7 +25,7 @@ our $defaultLog4perlConf = '
 Log::Log4perl::init(\$defaultLog4perlConf);
 Log::Any::Adapter->set('Log4perl');
 
-my $uri = MarpaX::ESLIF::URI->new_abs(logger => $log, input => shift);
+my $uri = MarpaX::ESLIF::URI->new(logger => $log, input => shift);
 local %Data::Scan::Printer::Option = (with_ansicolor => 0);
 dspp($uri);
 

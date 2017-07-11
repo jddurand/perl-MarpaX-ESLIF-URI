@@ -1,12 +1,15 @@
+use strict;
+use warnings FATAL => 'all';
+
 package MarpaX::ESLIF::URI;
 
-use MarpaX::ESLIF::URI::Impl;
-
-# ABSTRACT: URI implementation
+# ABSTRACT: URI decoder as per RFC3986/RFC6874
 
 # AUTHORITY
 
 # VERSION
+
+use MarpaX::ESLIF::URI::Grammar;
 
 #
 # Default is <URI reference>
@@ -15,9 +18,9 @@ sub new {
   my ($class, @args) = @_;
 
   if ($#args == 0) {
-    return MarpaX::ESLIF::URI::Impl->new(start => 'URI reference', input => $args[0])
+    return bless(MarpaX::ESLIF::URI::Grammar->parse(start => 'URI reference', input => $args[0]), __PACKAGE__)
   } else {
-    return MarpaX::ESLIF::URI::Impl->new(start => 'URI reference', @args)
+    return bless(MarpaX::ESLIF::URI::Grammar->parse(start => 'URI reference', @args), __PACKAGE__)
   }
 }
 
@@ -28,9 +31,9 @@ sub new_abs {
   my ($class, @args) = @_;
 
   if ($#args == 0) {
-    return MarpaX::ESLIF::URI::Impl->new(start => 'absolute URI', input => $args[0])
+    return bless(MarpaX::ESLIF::URI::Grammar->parse(start => 'absolute URI', input => $args[0]), __PACKAGE__)
   } else {
-    return MarpaX::ESLIF::URI::Impl->new(start => 'absolute URI', @args)
+    return bless(MarpaX::ESLIF::URI::Grammar->parse(start => 'absolute URI', @args))
   }
 }
 
