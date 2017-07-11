@@ -28,6 +28,7 @@ sub parse {
   my $input    = $options{input};
   my $encoding = $options{encoding};
   my $logger   = $options{logger};
+  my $decode   = $options{decode};
   #
   # Get BNF, use singleton as much as possible
   #
@@ -49,7 +50,7 @@ sub parse {
   # Parse and get result
   #
   my $recognizerInterface = MarpaX::ESLIF::URI::Grammar::RecognizerInterface->new(data => $input, encoding => $encoding);
-  my $valueInterface = MarpaX::ESLIF::URI::Grammar::ValueInterface->new();
+  my $valueInterface = MarpaX::ESLIF::URI::Grammar::ValueInterface->new(data => $input, encoding => $encoding, start => $start, decode => $decode);
   $grammar->parse($recognizerInterface, $valueInterface);
   
   $valueInterface->getResult || croak 'Invalid input'
@@ -75,10 +76,10 @@ __DATA__
                            | <path rootless>
                            | <path empty>
 
-<URI reference>          ::= <URI>
-                           | <relative ref>
+<URI reference>          ::= <URI>                                                           action => utf8
+                           | <relative ref>                                                  action => utf8
 
-<absolute URI>           ::= <scheme> ":" <hier part> <URI query>
+<absolute URI>           ::= <scheme> ":" <hier part> <URI query>                            action => utf8
 
 <relative ref>           ::= <relative part> <URI query> <URI fragment>
 
@@ -204,7 +205,7 @@ __DATA__
 <fragment unit>          ::= <pchar> | "/" | "?"
 <fragment>               ::= <fragment unit>*                                               action => fragment
 
-<pct encoded>            ::= "%" <HEXDIG> <HEXDIG>
+<pct encoded>            ::= "%" <HEXDIG> <HEXDIG>                                          action => pct_encoded
 
 <unreserved>             ::= <ALPHA> | <DIGIT> | "-" | "." | "_" | "~"
 <reserved>               ::= <gen delims> | <sub delims>

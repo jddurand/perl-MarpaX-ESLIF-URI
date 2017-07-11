@@ -27,10 +27,15 @@ sub new {
     bless {
         result => undef,
         tmp => {
+            start     => $options{start},    # Keep a copy of grammar start
+            data      => $options{data},     # Keep a copy of raw input
+            encoding  => $options{encoding}, # Keep a copy of raw input encoding information
+            decode    => $options{decode},   # Keep a copy of decode option
+            utf8      => undef,              # UTF-8 concatenated parsing value
             scheme    => undef,
             authority => undef,
-            path      => '',                # Path is never undef per def
-            segments  => [],                # So are the segments
+            path      => '',                 # Path is never undef per def
+            segments  => [],                 # So are the segments
             query     => undef,
             fragment  => undef,
             userinfo  => undef,
@@ -160,6 +165,22 @@ sub host {
 sub port {
   my $self = shift;
   $self->{tmp}->{port} = join('', map { $_ // '' } @_ )
+}
+
+sub utf8 {
+    my $self = shift;
+    $self->{tmp}->{utf8} = join('', map { $_ // '' } @_ )
+}
+
+sub pct_encoded {
+    my $self = shift;
+
+    if ($self->{decode}) {
+        # %XX
+        chr(hex("$_[1]$_[2]"))
+    } else {
+        join('', @_)
+    }
 }
 
 1;
