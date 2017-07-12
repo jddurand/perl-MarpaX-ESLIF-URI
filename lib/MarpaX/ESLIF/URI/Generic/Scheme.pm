@@ -11,7 +11,7 @@ package MarpaX::ESLIF::URI::Generic::Scheme;
 
 use Moo;
 use MarpaX::ESLIF::URI::Grammar;
-use Types::Standard qw/Str Undef/;
+use Types::Standard qw/Str Undef HashRef/;
 use Unicode::CaseFold qw/fc/;
 use overload
     '""' => 'stringify',
@@ -21,7 +21,7 @@ use overload
 
 has 'input'    => (is => 'ro',  isa => Str|Undef, required => 1);
 has 'encoding' => (is => 'ro',  isa => Str|Undef, required => 1);
-has 'scheme'   => (is => 'rwp', isa => Str|Undef, default => sub {});
+has 'parsed'   => (is => 'rwp', isa => HashRef, default => sub { {} });
 
 around BUILDARGS => sub {
     my ($orig, $class, @args) = @_;
@@ -36,7 +36,7 @@ sub BUILD {
 
     my $input = $self->input;
     if (defined($input)) {
-        $self->_set_scheme(MarpaX::ESLIF::URI::Grammar->parse(start => 'scheme',
+        $self->_set_parsed(MarpaX::ESLIF::URI::Grammar->parse(start => 'scheme',
                                                               input => $self->input,
                                                               encoding => $self->encoding,
                                                               logger => $self->_logger,
@@ -47,7 +47,7 @@ sub BUILD {
 sub stringify {
     my ($self) = @_;
 
-    return $self->has_predicate ? $self->scheme : ''
+    return $self->parsed
 }
 
 sub compare {
@@ -61,13 +61,11 @@ sub compare {
 sub normalize {
     my ($self) = @_;
 
-    my $string = "$self";          # Stringification
-
+    my $string = $self->stringify;
     #
     # Schemes are care insensitive
     #
     my $normalized = fc($string);
-
     #
     # And that's all
     #
