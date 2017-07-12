@@ -30,7 +30,7 @@ sub BUILD {
   my ($self) = @_;
 
   #
-  # Well, no need to reparse are 'URI reference': an absolute URI is an URI that:
+  # An absolute URI is an URI that:
   # - have a scheme
   # - do not have a fragment
 

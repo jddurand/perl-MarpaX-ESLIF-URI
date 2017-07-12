@@ -48,7 +48,7 @@ __DATA__
 <hier part>              ::= "//" <authority> <path abempty>
                            | <path absolute>
                            | <path rootless>
-                           | <path empty>
+                           | <path empty>                                   action => path # Marpa does not call <path empty> rule (!?)
 
 <URI reference>          ::= <URI>
                            | <relative ref>
@@ -60,7 +60,7 @@ __DATA__
 <relative part>          ::= "//" <authority> <path abempty>
                            | <path absolute>
                            | <path noscheme>
-                           | <path empty>
+                           | <path empty>                                   action => path # Marpa does not call <path empty> rule (!?)
 
 <scheme>                 ::= <ALPHA> <scheme trailer>                                        action => scheme
 <scheme trailer unit>    ::= <ALPHA> | <DIGIT> | "+" | "-" | "."
@@ -164,7 +164,7 @@ __DATA__
                            | "/" <segment nz> <path abempty>                                action => path
 <path noscheme>          ::= <segment nz nc> <path abempty>                                 action => path
 <path rootless>          ::= <segment nz> <path abempty>                                    action => path
-<path empty>             ::=                                                                action => path
+<path empty>             ::=                                                                # action => path
 
 <segment>                ::= <pchar>*                                                       action => segment
 <segment nz>             ::= <pchar>+                                                       action => segment

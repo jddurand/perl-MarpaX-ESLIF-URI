@@ -32,7 +32,7 @@ sub new {
             userinfo  => undef,
             host      => undef,
             port      => undef,
-            path      => '',
+            path      => undef,
             segments  => [],
             query     => undef,
             fragment  => undef
