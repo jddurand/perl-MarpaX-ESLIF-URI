@@ -19,12 +19,12 @@ my $_ESLIF = MarpaX::ESLIF->new();
 my $_GRAMMAR = MarpaX::ESLIF::Grammar->new($_ESLIF, $_BNF);
 
 sub parse {
-  my ($class, $input) = @_;
+  my ($class, $input, $normalize) = @_;
   #
   # Parse and get result
   #
   my $recognizerInterface = MarpaX::ESLIF::URI::Grammar::RecognizerInterface->new($input);
-  my $valueInterface = MarpaX::ESLIF::URI::Grammar::ValueInterface->new();
+  my $valueInterface = MarpaX::ESLIF::URI::Grammar::ValueInterface->new($normalize);
   $_GRAMMAR->parse($recognizerInterface, $valueInterface);
 
   $valueInterface->getResult || croak 'Invalid input'

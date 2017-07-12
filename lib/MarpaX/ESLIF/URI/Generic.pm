@@ -11,6 +11,7 @@ use strictures 2;
 use Carp qw/croak/;
 use MarpaX::ESLIF::URI::Grammar;
 use Types::Standard qw/Bool/;
+use Scalar::Util qw/blessed/;
 use URI::Escape qw/uri_escape/;
 use overload
   '""' => 'stringify',
@@ -95,6 +96,113 @@ sub base {
     #                         (map { $_ => $self->$_ } $self->Query_fields),
     #                         (map { $_ => undef } $self->Fragment_fields));
     return __PACKAGE__->new($new_string)
+  }
+}
+
+sub rebase {
+  my ($R, $Base, $strict) = @_;
+
+  $R    = __PACKAGE__->new("$R")    unless (blessed($R)    // '') eq __PACKAGE__;
+  $Base = __PACKAGE__->new("$Base") unless (blessed($Base) // '') eq __PACKAGE__;
+
+  croak 'Base must be an absolute URI' unless $Base->is_absolute;
+
+  my (%R, %Base);
+  map { $R{$_}    = $R->$_    } qw/scheme authority path query segment/;
+  map { $Base{$_} = $Base->$_ } qw/scheme authority path query segment/;
+  #
+  # A non-strict parser may ignore a scheme in the reference
+  # if it is identical to the base URI's scheme.
+  #
+  # Per def $Base{scheme} is defined
+  # $R{scheme} may be undefined
+  #
+  if ((! $strict) && defined($R{scheme}) && ($R{scheme} eq $Base{scheme})) {
+    $R{scheme} = undef
+  }
+
+  my %T;
+  if (defined($R{scheme})) {
+    $T{scheme}    = $R{scheme};
+    $T{authority} = $R{authority};
+    $T{path}      = __PACKAGE__->remove_dot_segments($R{path});
+    $T{query}     = $R{query}
+  } else {
+    if (defined($R{authority})) {
+      $T{authority} = $R{authority};
+      $T{path}      = __PACKAGE__->remove_dot_segments($R{path});
+      $T{query}     = $R{query}
+    } else {
+      if (! length($R{path})) {
+        $T{path} = $Base{path};
+        if (defined($R{query})) {
+          $T{query} = $R{query}
+        } else {
+          $T{query} = $Base{query}
+        }
+      } else {
+        if (substr($R{path}, 0, 1) eq '/') {
+          $T{path} = __PACKAGE__->remove_dot_segments($R{path})
+        } else {
+          $T{path} = __PACKAGE__->merge($Base, $R);
+          $T{path} = __PACKAGE__->remove_dot_segments($T{path})
+        }
+        $T{query} = $R{query};
+      }
+      $T{authority} = $Base{authority};
+    }
+    $T{scheme} = $Base{scheme};
+  }
+
+  $T{fragment} = $R{fragment};
+
+  #
+  # We construct a full stringified version of T
+  #
+  my $T = '';
+  $T .= $T{scheme} . ':' if (defined($T{scheme}));
+  $T .= '//' . $T{authority} if (defined($T{authority}));
+  $T .= $T{path};
+  $T .= '?' . $T{query} if (defined($T{query}));
+  $T .= '#' . $T{fragment} if (defined($T{fragment}));
+
+  return __PACKAGE__->new($T)
+}
+
+sub merge {
+  my ($class, $Base, $R) = @_;
+
+  if (defined($Base->authority) && ! length($Base->path)) {
+    return '/' . $R->path
+  } else {
+    my $path = $Base->path;                # If empty then ./..
+    my @segment = @{$Base->segment};       # ../. no segment -;
+    if (@segment) {
+      my $quote_last_segment = quotemeta($segment[-1]);
+      $path =~ s/$quote_last_segment$//;
+    }
+    return $path . $R->path
+  }
+}
+
+sub remove_dot_segments {
+  my ($class, $input) = @_;
+
+  my $output = '';
+  while (length($input) > 0) {
+    if (($input =~/^\.\.\//p) || ($input =~ /^\.\//p)) {
+      substr($input, 0, length(${^MATCH}), '')
+    } elsif (($input =~/^\/\.\//p) || ($input =~ /^\/\.(?:\/|\z)/p)) {
+      substr($input, 0, length(${^MATCH}), '/')
+    } elsif (($input =~/^\/\.\.\//p) || ($input =~ /^\/\.\.(?:\/|\z)/p)) {
+      substr($input, 0, length(${^MATCH}), '/');
+      $output =~ s/\/?[^\/]*$//
+    } elsif ($input eq '.') {
+      substr($input, 0, 1, '')
+    } elsif ($input eq '..') {
+      substr($input, 0, 2, '')
+    } else {
+    }
   }
 }
 

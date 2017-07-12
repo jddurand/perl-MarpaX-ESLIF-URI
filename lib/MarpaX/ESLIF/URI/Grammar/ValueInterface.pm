@@ -22,23 +22,24 @@ Instantiate a new value interface object.
 =cut
 
 sub new {
-    my ($pkg, %options) = @_;
+    my ($pkg, $normalize) = @_;
 
     bless {
-        result => undef,
-        tmp => {
-            URI_reference  => undef,
-            scheme         => undef,
-            authority      => undef,
-            userinfo       => undef,
-            host           => undef,
-            port           => undef,
-            path           => '',
-            segments       => [],
-            query          => undef,
-            fragment       => undef
-        },
-        %options }, $pkg
+           result => undef,
+           normalize => $normalize,
+           tmp => {
+                   URI_reference  => undef,
+                   scheme         => undef,
+                   authority      => undef,
+                   userinfo       => undef,
+                   host           => undef,
+                   port           => undef,
+                   path           => '',
+                   segments       => [],
+                   query          => undef,
+                   fragment       => undef
+                  },
+           }, $pkg
 }
 
 # ----------------
@@ -145,9 +146,16 @@ sub segment {
 # pct_encoded is a special action
 #
 sub pct_encoded {
-    my $self = shift;
+    my ($self, $pct, $hex1, $hex2) = @_;
 
-    chr(hex("$_[1]$_[2]"))
+    if ($self->{normalize}) {
+      #
+      # Case normalization
+      #
+      $hex1 = uc($hex1);
+      $hex2 = uc($hex2)
+    }
+    chr(hex("$hex1$hex2"))
 }
 
 1;
