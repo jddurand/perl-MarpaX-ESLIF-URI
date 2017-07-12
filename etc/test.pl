@@ -33,11 +33,21 @@ while (@ARGV) {
   print "\n";
   print "Stringification: $uri\n";
 
-  print "From clone...:\n";
-  my $uri_clone = $uri->clone;
+  print "\nFrom clone...:\n";
+  my $clone = $uri->clone;
   local %Data::Scan::Printer::Option = (with_ansicolor => 0);
-  dspp($uri_clone);
+  dspp($clone);
   print "\n";
-  print "Stringification: $uri_clone\n";
+  print "Stringification: $clone\n";
+
+  print "\nFrom base...:\n";
+  eval {
+    my $base = $uri->base;
+    local %Data::Scan::Printer::Option = (with_ansicolor => 0);
+    dspp($base);
+    print "\n";
+    print "Stringification: $base\n";
+  };
+  print "$@" if $@;
 }
 

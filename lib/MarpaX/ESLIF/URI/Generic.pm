@@ -8,6 +8,7 @@ package MarpaX::ESLIF::URI::Generic;
 
 use Moo;
 use strictures 2;
+use Carp qw/croak/;
 use MarpaX::ESLIF::URI::Grammar;
 use Types::Standard qw/Bool/;
 use URI::Escape qw/uri_escape/;
@@ -48,12 +49,10 @@ sub stringify {
 
 sub clone {
   my ($self) = @_;
-
+  #
+  # No need to reparse when we clone - we know all the attributes
+  #
   return __PACKAGE__->new(#
-                          # Our specific fields
-                          #
-                          is_absolute => $self->is_absolute,
-                          #
                           # Role fields (there is no /external/ introspection API in Moo unless promotion to Moose AFAIK)
                           #
                           (map { $_ => $self->$_ } $self->URI_reference_fields),
@@ -62,6 +61,41 @@ sub clone {
                           (map { $_ => $self->$_ } $self->Path_fields),
                           (map { $_ => $self->$_ } $self->Query_fields),
                           (map { $_ => $self->$_ } $self->Fragment_fields));
+}
+
+sub base {
+  my ($self) = @_;
+
+  if ($self->is_absolute) {
+    #
+    # We are already a base URI
+    #
+    return $self->clone
+  } else {
+    #
+    # We need the scheme
+    #
+    croak "Cannot derive a base URI from $self: there is no scheme" unless defined $self->scheme;
+    #
+    # Here per def there is a fragment
+    #
+    my $quote_fragment = quotemeta($self->fragment);
+    my $new_string = "$self";
+    $new_string =~ s/#$quote_fragment$//;
+    #
+    # In theory, I could have done like clone by setting explicitly URI_reference to $new_string and fragments to undef
+    #
+    # return __PACKAGE__->new(#
+    #                         # Role fields (there is no /external/ introspection API in Moo unless promotion to Moose AFAIK)
+    #                         #
+    #                         URI_reference => $new_string,
+    #                         (map { $_ => $self->$_ } $self->Scheme_fields),
+    #                         (map { $_ => $self->$_ } $self->Authority_fields),
+    #                         (map { $_ => $self->$_ } $self->Path_fields),
+    #                         (map { $_ => $self->$_ } $self->Query_fields),
+    #                         (map { $_ => undef } $self->Fragment_fields));
+    return __PACKAGE__->new($new_string)
+  }
 }
 
 sub compare {
