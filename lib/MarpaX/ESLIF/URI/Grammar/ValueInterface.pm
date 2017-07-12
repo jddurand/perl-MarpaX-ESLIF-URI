@@ -27,15 +27,16 @@ sub new {
     bless {
         result => undef,
         tmp => {
-            scheme    => undef,
-            authority => undef,
-            userinfo  => undef,
-            host      => undef,
-            port      => undef,
-            path      => undef,
-            segments  => [],
-            query     => undef,
-            fragment  => undef
+            URI_reference  => undef,
+            scheme         => undef,
+            authority      => undef,
+            userinfo       => undef,
+            host           => undef,
+            port           => undef,
+            path           => '',
+            segments       => [],
+            query          => undef,
+            fragment       => undef
         },
         %options }, $pkg
 }
@@ -120,14 +121,15 @@ sub _concat {
   $self->{tmp}->{$what} = join('', map { $_ // '' } @args )
 }
 
-sub scheme    { shift->_concat('scheme',    @_) }
-sub authority { shift->_concat('authority', @_) }
-sub path      { shift->_concat('path',      @_) }
-sub query     { shift->_concat('query',     @_) }
-sub fragment  { shift->_concat('fragment',  @_) }
-sub userinfo  { shift->_concat('userinfo',  @_) }
-sub host      { shift->_concat('host',      @_) }
-sub port      { shift->_concat('port',      @_) }
+sub scheme        { shift->_concat('scheme',        @_) }
+sub authority     { shift->_concat('authority',     @_) }
+sub path          { shift->_concat('path',          @_) }
+sub query         { shift->_concat('query',         @_) }
+sub fragment      { shift->_concat('fragment',      @_) }
+sub userinfo      { shift->_concat('userinfo',      @_) }
+sub host          { shift->_concat('host',          @_) }
+sub port          { shift->_concat('port',          @_) }
+sub URI_reference { shift->_concat('URI_reference', @_) }
 
 #
 # Segment is a special action

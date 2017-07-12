@@ -12,4 +12,9 @@ use Types::Standard qw/Undef Str/;
 
 has 'fragment' => (is => 'rwp', isa => Undef|Str, required => 1);
 
+#
+# Used for clone
+#
+sub Fragment_fields  { qw/fragment/ }
+
 1;

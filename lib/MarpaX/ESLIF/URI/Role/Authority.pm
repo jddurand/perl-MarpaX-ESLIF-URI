@@ -16,4 +16,9 @@ has 'userinfo'  => (is => 'rwp', isa => Undef|Str,         required => 1);
 has 'host'      => (is => 'rwp', isa => Undef|Str,         required => 1);
 has 'port'      => (is => 'rwp', isa => Undef|PositiveInt, required => 1);
 
+#
+# Used for clone
+#
+sub Authority_fields  { qw/authority userinfo host port/ }
+
 1;

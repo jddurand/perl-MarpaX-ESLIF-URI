@@ -12,4 +12,9 @@ use Types::Standard qw/Undef Str/;
 
 has 'query' => (is => 'rwp', isa => Undef|Str, required => 1);
 
+#
+# Used for clone
+#
+sub Query_fields  { qw/query/ }
+
 1;

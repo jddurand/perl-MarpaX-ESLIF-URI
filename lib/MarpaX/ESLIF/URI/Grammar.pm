@@ -50,8 +50,8 @@ __DATA__
                            | <path rootless>
                            | <path empty>                                   action => path # Marpa does not call <path empty> rule (!?)
 
-<URI reference>          ::= <URI>
-                           | <relative ref>
+<URI reference>          ::= <URI>                                          action => URI_reference
+                           | <relative ref>                                 action => URI_reference
 
 <absolute URI>           ::= <scheme> ":" <hier part> <URI query>
 
