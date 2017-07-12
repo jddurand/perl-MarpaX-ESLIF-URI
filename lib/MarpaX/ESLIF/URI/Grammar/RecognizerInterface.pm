@@ -14,8 +14,8 @@ package MarpaX::ESLIF::URI::Grammar::RecognizerInterface;
 # -----------
 
 sub new {
-    my ($pkg, %options) = @_;
-    bless \%options, $pkg
+    my ($pkg, $input) = @_;
+    bless \$input, $pkg
 }
 
 # ----------------
@@ -54,7 +54,7 @@ Returns encoding information. Default is undef.
 
 =cut
 
-sub encoding               { $_[0]->{encoding} } # Let MarpaX::ESLIF guess eventually
+sub encoding               {          } # Let MarpaX::ESLIF guess eventually
 
 =head3 data($self)
 
@@ -62,7 +62,7 @@ Returns last bunch of data. Default is the string passed in the constructor.
 
 =cut
 
-sub data                   { $_[0]->{data} } # Data itself
+sub data                   { ${$_[0]} } # Input
 
 =head3 isWithDisableThreshold($self)
 

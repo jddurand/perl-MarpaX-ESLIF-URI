@@ -14,45 +14,19 @@ use MarpaX::ESLIF;
 use MarpaX::ESLIF::URI::Grammar::RecognizerInterface;
 use MarpaX::ESLIF::URI::Grammar::ValueInterface;
 
-my $_DATA  = do { local $/; <DATA> };
-my $_ESLIF;
-my %_GRAMMAR;
-my %_BNF;
+my $_BNF = do { local $/; <DATA> };
+my $_ESLIF = MarpaX::ESLIF->new();
+my $_GRAMMAR = MarpaX::ESLIF::Grammar->new($_ESLIF, $_BNF);
 
 sub parse {
-  my ($class, %options) = @_;
-  #
-  # Get options
-  #
-  my $start    = $options{start};
-  my $input    = $options{input};
-  my $encoding = $options{encoding};
-  my $logger   = $options{logger};
-  my $decode   = $options{decode};
-  #
-  # Get BNF, use singleton as much as possible
-  #
-  if (! defined($_BNF{$start})) {
-    $_BNF{$start} = $_DATA;
-    $_BNF{$start} =~ s/\$START/<$start>/;
-  }
-  my $bnf = $_BNF{$start};
-  #
-  # Compile grammar, use singleton as much as possible
-  #
-  my $grammar;
-  if (defined($logger)) {
-    $grammar = MarpaX::ESLIF::Grammar->new(MarpaX::ESLIF->new($logger), $bnf)
-  } else {
-    $grammar = ($_GRAMMAR{$start} //= MarpaX::ESLIF::Grammar->new(($_ESLIF //= MarpaX::ESLIF->new()), $bnf));
-  }
+  my ($class, $input) = @_;
   #
   # Parse and get result
   #
-  my $recognizerInterface = MarpaX::ESLIF::URI::Grammar::RecognizerInterface->new(data => $input, encoding => $encoding);
-  my $valueInterface = MarpaX::ESLIF::URI::Grammar::ValueInterface->new(data => $input, encoding => $encoding, start => $start, decode => $decode);
-  $grammar->parse($recognizerInterface, $valueInterface);
-  
+  my $recognizerInterface = MarpaX::ESLIF::URI::Grammar::RecognizerInterface->new($input);
+  my $valueInterface = MarpaX::ESLIF::URI::Grammar::ValueInterface->new();
+  $_GRAMMAR->parse($recognizerInterface, $valueInterface);
+
   $valueInterface->getResult || croak 'Invalid input'
 }
 
@@ -60,7 +34,7 @@ sub parse {
 
 
 __DATA__
-:start ::= $START
+:start ::= <URI reference>
 #
 # Reference: https://tools.ietf.org/html/rfc3986#appendix-A
 # Reference: https://tools.ietf.org/html/rfc6874
@@ -76,10 +50,10 @@ __DATA__
                            | <path rootless>
                            | <path empty>
 
-<URI reference>          ::= <URI>                                                           action => utf8
-                           | <relative ref>                                                  action => utf8
+<URI reference>          ::= <URI>
+                           | <relative ref>
 
-<absolute URI>           ::= <scheme> ":" <hier part> <URI query>                            action => utf8
+<absolute URI>           ::= <scheme> ":" <hier part> <URI query>
 
 <relative ref>           ::= <relative part> <URI query> <URI fragment>
 

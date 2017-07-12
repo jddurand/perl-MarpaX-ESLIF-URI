@@ -27,20 +27,15 @@ sub new {
     bless {
         result => undef,
         tmp => {
-            start     => $options{start},    # Keep a copy of grammar start
-            data      => $options{data},     # Keep a copy of raw input
-            encoding  => $options{encoding}, # Keep a copy of raw input encoding information
-            decode    => $options{decode},   # Keep a copy of decode option
-            utf8      => undef,              # UTF-8 concatenated parsing value
             scheme    => undef,
             authority => undef,
-            path      => '',                 # Path is never undef per def
-            segments  => [],                 # So are the segments
-            query     => undef,
-            fragment  => undef,
             userinfo  => undef,
             host      => undef,
-            port      => undef
+            port      => undef,
+            path      => '',
+            segments  => [],
+            query     => undef,
+            fragment  => undef
         },
         %options }, $pkg
 }
@@ -120,21 +115,23 @@ L<MarpaX::ESLIF::RFC3986>
 # ... Special actions so that setResult gets $self->{work}
 #
 
-sub scheme {
-  my $self = shift;
-  $self->{tmp}->{scheme} = join('', map { $_ // '' } @_ )
+sub _concat {
+  my ($self, $what, @args) = @_;
+  $self->{tmp}->{$what} = join('', map { $_ // '' } @args )
 }
 
-sub authority {
-  my $self = shift;
-  $self->{tmp}->{authority} = join('', map { $_ // '' } @_ )
-}
+sub scheme    { shift->_concat('scheme',    @_) }
+sub authority { shift->_concat('authority', @_) }
+sub path      { shift->_concat('path',      @_) }
+sub query     { shift->_concat('query',     @_) }
+sub fragment  { shift->_concat('fragment',  @_) }
+sub userinfo  { shift->_concat('userinfo',  @_) }
+sub host      { shift->_concat('host',      @_) }
+sub port      { shift->_concat('port',      @_) }
 
-sub path {
-  my $self = shift;
-  $self->{tmp}->{path} = join('', map { $_ // '' } @_ )
-}
-
+#
+# Segment is a special action
+#
 sub segment {
     my $self = shift;
     my $segment = join('', map { $_ // '' } @_ );
@@ -142,45 +139,13 @@ sub segment {
     $segment
 }
 
-sub query {
-  my $self = shift;
-  $self->{tmp}->{query} = join('', map { $_ // '' } @_ )
-}
-
-sub fragment {
-  my $self = shift;
-  $self->{tmp}->{fragment} = join('', map { $_ // '' } @_ )
-}
-
-sub userinfo {
-  my $self = shift;
-  $self->{tmp}->{userinfo} = join('', map { $_ // '' } @_ )
-}
-
-sub host {
-  my $self = shift;
-  $self->{tmp}->{host} = $_[0]
-}
-
-sub port {
-  my $self = shift;
-  $self->{tmp}->{port} = join('', map { $_ // '' } @_ )
-}
-
-sub utf8 {
-    my $self = shift;
-    $self->{tmp}->{utf8} = join('', map { $_ // '' } @_ )
-}
-
+#
+# pct_encoded is a special action
+#
 sub pct_encoded {
     my $self = shift;
 
-    if ($self->{decode}) {
-        # %XX
-        chr(hex("$_[1]$_[2]"))
-    } else {
-        join('', @_)
-    }
+    chr(hex("$_[1]$_[2]"))
 }
 
 1;

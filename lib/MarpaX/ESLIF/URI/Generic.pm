@@ -1,6 +1,3 @@
-use strict;
-use warnings FATAL => 'all';
-
 package MarpaX::ESLIF::URI::Generic;
 
 # ABSTRACT: URI Generic syntax as per RFC3986/RFC6874
@@ -10,66 +7,68 @@ package MarpaX::ESLIF::URI::Generic;
 # VERSION
 
 use Moo;
-use MarpaX::ESLIF::URI::Generic::Scheme;
-use Types::Standard qw/Str Undef Bool HashRef InstanceOf/;
+use strictures 2;
+use MarpaX::ESLIF::URI::Grammar;
+use Types::Standard qw/Bool/;
+use overload
+  '""' => 'stringify',
+  fallback => 1;
 
-has 'input'    => (is => 'ro',  isa => Str|Undef, required => 1);
-has 'encoding' => (is => 'ro',  isa => Str|Undef, required => 1);
-has 'absolute' => (is => 'ro',  isa => Bool,      required => 1);
-has 'scheme'   => (is => 'rwp', isa => InstanceOf['MarpaX::ESLIF::URI::Generic::Scheme'], default => sub { MarpaX::ESLIF::URI::Generic::Scheme->new() });
-has 'parse'    => (is => 'rwp', isa => HashRef, default => sub { {} });
+has 'is_absolute' => (is => 'rwp', isa => Bool);
 
 around BUILDARGS => sub {
     my ($orig, $class, @args) = @_;
 
-    return {input => undef,    encoding => undef, absolute => 0} if ! @args == 1;
-    return {input => $args[0], encoding => undef, absolute => 0} if @args == 1 && !ref $args[0];
-    return $class->$orig(@args)
+    if (@args == 1 && ! ref $args[0]) {
+      return MarpaX::ESLIF::URI::Grammar->parse($args[0]);
+    } else {
+      return $class->$orig(@args)
+    }
 };
 
 sub BUILD {
-    my ($self, $args) = @_;
+  my ($self) = @_;
 
-    my $input = $self->input;
-    if (defined($input)) {
-        my $absolute = $self->absolute;
-        $self->_set_parse(MarpaX::ESLIF::URI::Grammar->parse(start => $absolute ? 'absolute URI' :'URI reference',
-                                                             input => $self->input,
-                                                             encoding => $self->encoding,
-                                                             logger => $self->_logger,
-                                                             decode => 1));
-    }
+  #
+  # Well, no need to reparse are 'URI reference': an absolute URI is an URI that:
+  # - have a scheme
+  # - do not have a fragment
+
+  $self->_set_is_absolute((defined($self->scheme) && ! defined($self->fragment)) ? 1 : 0)
 }
+
 sub stringify {
     my ($self) = @_;
 
-    return $self->has_predicate ? $self->scheme : ''
+    my $string = '';
+
+    my $scheme   = $self->scheme;
+    $string .= "$scheme:" if defined($scheme);
+
+    my $authority = $self->authority;
+    $string .= "//$authority" if defined($authority);
+
+    $string .= $self->path;
+
+    my $query = $self->query;
+    $string .= "?query" if defined($query);
+
+    my $fragment = $self->fragment;
+    $string .= "#$fragment" if defined($fragment);
+
+    return $string
 }
 
 sub compare {
     my ($self1, $self2, $swap) = @_;
 
-    ($self1, $self2) = ($self2, $self1) if $swap;
-
-    return $self1->normalize cmp $self2->normalize
+    return "$self1" cmp "$self2" # TO DO
 }
 
-sub normalize {
-    my ($self) = @_;
-
-    my $string = "$self";          # Stringification
-
-    #
-    # Schemes are care insensitive
-    #
-    my $normalized = fc($string);
-
-    #
-    # And that's all
-    #
-    return $normalized
-}
-
-with qw/MooX::Role::Logger/;
+with qw/MarpaX::ESLIF::URI::Role::Scheme
+        MarpaX::ESLIF::URI::Role::Authority
+        MarpaX::ESLIF::URI::Role::Path
+        MarpaX::ESLIF::URI::Role::Query
+        MarpaX::ESLIF::URI::Role::Fragment/;
 
 1;

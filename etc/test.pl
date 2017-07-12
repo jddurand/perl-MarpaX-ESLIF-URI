@@ -25,11 +25,11 @@ our $defaultLog4perlConf = '
 Log::Log4perl::init(\$defaultLog4perlConf);
 Log::Any::Adapter->set('Log4perl');
 
-my $uri = MarpaX::ESLIF::URI->new(logger => $log, input => shift);
-local %Data::Scan::Printer::Option = (with_ansicolor => 0);
-dspp($uri);
-print "\n";
+while (@ARGV) {
+  my $uri = MarpaX::ESLIF::URI->new(shift @ARGV);
+  local %Data::Scan::Printer::Option = (with_ansicolor => 0);
+  dspp($uri);
+  print "\n";
+  print "Stringification: $uri\n";
+}
 
-$uri = $uri->decode;
-dspp($uri);
-print "\n";
