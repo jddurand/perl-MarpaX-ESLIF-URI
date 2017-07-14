@@ -31,7 +31,8 @@ my $_GRAMMAR = MarpaX::ESLIF::Grammar->new($_ESLIF, $_BNF);
 sub BUILDARGS {
   my ($class, @args) = @_;
 
-  (@args == 1 && ! ref $args[0]) ? { input => $args[0] } : { @args }
+  croak "Usage: " . __PACKAGE__ . "->new(\$input)" unless (@args == 1 && ! ref $args[0]);
+  { input => $args[0] }
 };
 
 sub reconstruct {
@@ -84,9 +85,7 @@ sub stringify {
 
 sub clone {
   my ($self) = @_;
-  #
-  # No need to reparse when we clone - we know all the attributes
-  #
+
   __PACKAGE__->new("$self")
 }
 
