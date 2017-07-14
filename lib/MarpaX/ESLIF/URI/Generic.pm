@@ -81,7 +81,7 @@ sub is_absolute {
 sub stringify {
   my ($self) = @_;
 
-  $self->reconstruct
+  $self->input
 }
 
 sub clone {
