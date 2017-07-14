@@ -103,7 +103,7 @@ sub base {
     #
     croak "Cannot derive a base URI from $self: there is no scheme" unless defined $self->scheme;
     #
-    # Here per def there is a fragment, the base URI if the current URI without the fragment
+    # Here per def there is a fragment, the base URI is the current URI without this fragment
     #
     __PACKAGE__->new($self->reconstruct(fragment => undef))
   }
@@ -118,8 +118,8 @@ sub rebase {
   croak 'Base must be an absolute URI' unless $Base->is_absolute;
 
   my (%R, %Base);
-  map { $R{$_}    = $R->$_    } qw/scheme authority path query segment/;
-  map { $Base{$_} = $Base->$_ } qw/scheme authority path query segment/;
+  map { $R{$_}    = $R->$_    } qw/scheme authority path query segments/;
+  map { $Base{$_} = $Base->$_ } qw/scheme authority path query segments/;
   #
   # A non-strict parser may ignore a scheme in the reference
   # if it is identical to the base URI's scheme.
@@ -186,7 +186,7 @@ sub merge {
     return '/' . $R->path
   } else {
     my $path = $Base->path;                # If empty then ./..
-    my @segment = @{$Base->segment};       # ../. no segment -;
+    my @segment = @{$Base->segments};      # ../. no segment -;
     if (@segment) {
       my $quote_last_segment = quotemeta($segment[-1]);
       $path =~ s/$quote_last_segment$//;
