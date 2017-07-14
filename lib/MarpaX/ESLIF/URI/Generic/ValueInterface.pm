@@ -1,9 +1,9 @@
 use strict;
 use warnings FATAL => 'all';
 
-package MarpaX::ESLIF::URI::Grammar::ValueInterface;
+package MarpaX::ESLIF::URI::Generic::ValueInterface;
 
-# ABSTRACT: MarpaX::ESLIF::URI::Grammar Value Interface
+# ABSTRACT: MarpaX::ESLIF::URI::Generic Value Interface
 
 # VERSION
 
@@ -26,7 +26,6 @@ sub new {
 
     bless {
            result => undef,
-           normalizer => $normalizer,
            tmp => {
                    URI_reference  => undef,
                    scheme         => undef,
@@ -122,40 +121,13 @@ sub _concat {
   $self->{tmp}->{$what} = join('', map { $_ // '' } @args )
 }
 
-sub scheme        {
-  my $self = shift;
-  my $scheme = $self->_concat('scheme', @_);
-
-  if ($self->{normalize}) {
-    #
-    # Case normalization
-    #
-    $scheme = lc($scheme)
-  }
-
-  $scheme
-}
-
+sub scheme        { shift->_concat('scheme',        @_) }
 sub authority     { shift->_concat('authority',     @_) }
 sub path          { shift->_concat('path',          @_) }
 sub query         { shift->_concat('query',         @_) }
 sub fragment      { shift->_concat('fragment',      @_) }
 sub userinfo      { shift->_concat('userinfo',      @_) }
-
-sub host        {
-  my $self = shift;
-  my $host = $self->_concat('host', @_);
-
-  if ($self->{normalize}) {
-    #
-    # Case normalization
-    #
-    $host = lc($host)
-  }
-
-  $host
-}
-
+sub host          { shift->_concat('host',          @_) }
 sub port          { shift->_concat('port',          @_) }
 sub URI_reference { shift->_concat('URI_reference', @_) }
 
@@ -164,6 +136,7 @@ sub URI_reference { shift->_concat('URI_reference', @_) }
 #
 sub segment {
     my $self = shift;
+
     my $segment = join('', map { $_ // '' } @_ );
     push(@{$self->{tmp}->{segments}}, $segment);
     $segment
@@ -175,13 +148,6 @@ sub segment {
 sub pct_encoded {
     my ($self, $pct, $hex1, $hex2) = @_;
 
-    if ($self->{normalize}) {
-      #
-      # Case normalization
-      #
-      $hex1 = uc($hex1);
-      $hex2 = uc($hex2)
-    }
     chr(hex("$hex1$hex2"))
 }
 

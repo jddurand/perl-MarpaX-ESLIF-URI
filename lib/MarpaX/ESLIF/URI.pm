@@ -6,9 +6,6 @@ package MarpaX::ESLIF::URI;
 
 # VERSION
 
-use Moo;
-use strictures 2;
-
-extends qw/MarpaX::ESLIF::URI::Generic/;
+use parent 'MarpaX::ESLIF::URI::Generic';
 
 1;
