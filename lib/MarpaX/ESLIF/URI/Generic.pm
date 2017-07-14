@@ -54,6 +54,7 @@ sub reconstruct {
   my $fragment = exists($from{fragment}) ? $from{fragment} : $self->fragment;
   $string .= "#$fragment" if defined($fragment);
 
+  $string
 }
 
 sub BUILD {
@@ -63,9 +64,9 @@ sub BUILD {
   #
   my $recognizerInterface = MarpaX::ESLIF::URI::Generic::RecognizerInterface->new($self->input);
   my $valueInterface = MarpaX::ESLIF::URI::Generic::ValueInterface->new();
-  $_GRAMMAR->parse($recognizerInterface, $valueInterface);
+  $_GRAMMAR->parse($recognizerInterface, $valueInterface) || croak 'Parse failure';
 
-  my $result = $valueInterface->getResult || croak 'Invalid input';
+  my $result = $valueInterface->getResult || croak "Invalid input";
   foreach (keys %{$result}) {
     $self->$_($result->{$_})
   }
