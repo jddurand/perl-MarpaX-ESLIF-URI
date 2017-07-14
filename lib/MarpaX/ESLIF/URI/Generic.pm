@@ -10,12 +10,9 @@ package MarpaX::ESLIF::URI::Generic;
 # VERSION
 
 use Carp qw/croak/;
-use Class::Tiny qw/URI_reference
+use Class::Tiny qw/input
                    scheme
                    authority
-                   userinfo
-                   host
-                   port
                    path
                    segments
                    query
@@ -34,19 +31,43 @@ my $_GRAMMAR = MarpaX::ESLIF::Grammar->new($_ESLIF, $_BNF);
 sub BUILDARGS {
   my ($class, @args) = @_;
 
-  (@args == 1 && ! ref $args[0]) ? $class->parse($args[0]) : { @args }
+  (@args == 1 && ! ref $args[0]) ? { input => $args[0] } : { @args }
 };
 
-sub parse {
-  my ($class, $input) = @_;
+sub reconstruct {
+  my ($self, %from) = @_;
+
+  my $string;
+
+  my $scheme = exists($from{scheme}) ? $from{scheme} : $self->scheme;
+  $string .= "$scheme:" if defined($scheme);
+
+  my $authority = exists($from{authority}) ? $from{authority} : $self->authority;
+  $string .= "//$authority" if defined($authority);
+
+  $string .= exists($from{path}) ? $from{path} : $self->path;
+
+  my $query = exists($from{query}) ? $from{query} : $self->query;
+  $string .= "?$query" if defined($query);
+
+  my $fragment = exists($from{fragment}) ? $from{fragment} : $self->fragment;
+  $string .= "#$fragment" if defined($fragment);
+
+}
+
+sub BUILD {
+  my ($self) = @_;
   #
   # Parse and get result
   #
-  my $recognizerInterface = MarpaX::ESLIF::URI::Generic::RecognizerInterface->new($input);
+  my $recognizerInterface = MarpaX::ESLIF::URI::Generic::RecognizerInterface->new($self->input);
   my $valueInterface = MarpaX::ESLIF::URI::Generic::ValueInterface->new();
   $_GRAMMAR->parse($recognizerInterface, $valueInterface);
 
-  $valueInterface->getResult || croak 'Invalid input'
+  my $result = $valueInterface->getResult || croak 'Invalid input';
+  foreach (keys %{$result}) {
+    $self->$_($result->{$_})
+  }
 }
 
 sub is_absolute {
@@ -56,31 +77,17 @@ sub is_absolute {
 }
 
 sub stringify {
-    my ($self) = @_;
-    #
-    # Nothing else but the parse tree value (i.e. the URI_reference)
-    #
-    return $self->URI_reference
-  }
+  my ($self) = @_;
+
+  $self->reconstruct
+}
 
 sub clone {
   my ($self) = @_;
   #
   # No need to reparse when we clone - we know all the attributes
   #
-  return __PACKAGE__->new(#
-                          # Role fields (there is no /external/ introspection API in Moo unless promotion to Moose AFAIK)
-                          #
-                          URI_reference => $self->URI_reference,
-                          scheme        => $self->scheme,
-                          authority     => $self->authority,
-                          userinfo      => $self->userinfo,
-                          host          => $self->host,
-                          port          => $self->port,
-                          path          => $self->path,
-                          segments      => $self->segments,
-                          query         => $self->query,
-                          fragment      => $self->fragment)
+  __PACKAGE__->new("$self")
 }
 
 sub base {
@@ -90,31 +97,16 @@ sub base {
     #
     # We are already a base URI
     #
-    return $self->clone
+    $self->clone
   } else {
     #
     # We need the scheme
     #
     croak "Cannot derive a base URI from $self: there is no scheme" unless defined $self->scheme;
     #
-    # Here per def there is a fragment
+    # Here per def there is a fragment, the base URI if the current URI without the fragment
     #
-    my $quote_fragment = quotemeta($self->fragment);
-    my $new_string = "$self";
-    $new_string =~ s/#$quote_fragment$//;
-    #
-    # In theory, I could have done like clone by setting explicitly URI_reference to $new_string and fragments to undef
-    #
-    # return __PACKAGE__->new(#
-    #                         # Role fields (there is no /external/ introspection API in Moo unless promotion to Moose AFAIK)
-    #                         #
-    #                         URI_reference => $new_string,
-    #                         (map { $_ => $self->$_ } $self->Scheme_fields),
-    #                         (map { $_ => $self->$_ } $self->Authority_fields),
-    #                         (map { $_ => $self->$_ } $self->Path_fields),
-    #                         (map { $_ => $self->$_ } $self->Query_fields),
-    #                         (map { $_ => undef } $self->Fragment_fields));
-    return __PACKAGE__->new($new_string)
+    __PACKAGE__->new($self->reconstruct(fragment => undef))
   }
 }
 
@@ -248,10 +240,10 @@ __DATA__
 <hier part>              ::= "//" <authority> <path abempty>
                            | <path absolute>
                            | <path rootless>
-                           | <path empty>                                   action => path # Marpa does not call <path empty> rule (!?)
+                           | <path empty>                                                   action => path # Marpa does not call <path empty> rule (!?)
 
-<URI reference>          ::= <URI>                                          action => URI_reference
-                           | <relative ref>                                 action => URI_reference
+<URI reference>          ::= <URI>
+                           | <relative ref>
 
 <absolute URI>           ::= <scheme> ":" <hier part> <URI query>
 
@@ -260,7 +252,7 @@ __DATA__
 <relative part>          ::= "//" <authority> <path abempty>
                            | <path absolute>
                            | <path noscheme>
-                           | <path empty>                                   action => path # Marpa does not call <path empty> rule (!?)
+                           | <path empty>                                                    action => path # Marpa does not call <path empty> rule (!?)
 
 <scheme>                 ::= <ALPHA> <scheme trailer>                                        action => scheme
 <scheme trailer unit>    ::= <ALPHA> | <DIGIT> | "+" | "-" | "."
@@ -272,7 +264,7 @@ __DATA__
 <authority port>         ::=
 <authority>              ::= <authority userinfo> <host> <authority port>                    action => authority
 <userinfo unit>          ::= <unreserved> | <pct encoded> | <sub delims> | ":"
-<userinfo>               ::= <userinfo unit>*                                                action => userinfo
+<userinfo>               ::= <userinfo unit>*
 #
 # The syntax rule for host is ambiguous because it does not completely
 # distinguish between an IPv4address and a reg-name.  In order to
@@ -280,10 +272,10 @@ __DATA__
 # If host matches the rule for IPv4address, then it should be
 # considered an IPv4 address literal and not a reg-name.
 #
-<host>                   ::= <IP literal>            rank =>  0                              action => host
-                           | <IPv4address>           rank => -1                              action => host
-                           | <reg name>              rank => -2                              action => host
-<port>                   ::= <DIGIT>*                                                        action => port
+<host>                   ::= <IP literal>            rank =>  0
+                           | <IPv4address>           rank => -1
+                           | <reg name>              rank => -2
+<port>                   ::= <DIGIT>*
 
 <IP literal interior>    ::= <IPv6address> | <IPv6addrz> | <IPvFuture>
 <IP literal>             ::= "[" <IP literal interior> "]"
@@ -379,7 +371,7 @@ __DATA__
 <fragment unit>          ::= <pchar> | "/" | "?"
 <fragment>               ::= <fragment unit>*                                               action => fragment
 
-<pct encoded>            ::= "%" <HEXDIG> <HEXDIG>                                          action => pct_encoded
+<pct encoded>            ::= "%" <HEXDIG> <HEXDIG> #                                          action => pct_encoded
 
 <unreserved>             ::= <ALPHA> | <DIGIT> | "-" | "." | "_" | "~"
 <reserved>               ::= <gen delims> | <sub delims>
