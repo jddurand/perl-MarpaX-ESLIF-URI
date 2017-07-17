@@ -2,21 +2,11 @@ use strict;
 use warnings FATAL => 'all';
 
 package MarpaX::ESLIF::URI::_generic::ValueInterface;
+use vars qw/$AUTOLOAD/;
 
 sub new {
-  my ($class, %options) = @_;
-
-  bless {
-         scheme    => undef,
-         authority => undef,
-         userinfo  => undef,
-         host      => undef,
-         port      => undef,
-         path      => '',
-         segments  => [],
-         query     => undef,
-         fragment => undef
-        }, $class
+  my ($class) = @_;
+  bless {}, $class          # C.f. AUTOLOAD
 }
 
 #
@@ -53,13 +43,13 @@ sub _field {
     $self->{$what} = join('', map { $_ // '' } @args)
 }
 
-sub scheme    { shift->_field('scheme',    @_) }
-sub authority { shift->_field('authority', @_) }
-sub userinfo  { shift->_field('userinfo',  @_) }
-sub host      { shift->_field('host',      @_) }
-sub port      { shift->_field('port',      @_) }
-sub path      { shift->_field('path',      @_) }
-sub query     { shift->_field('query',     @_) }
-sub fragment  { shift->_field('fragment',  @_) }
+#
+# The hash it automatically generated
+#
+sub AUTOLOAD {
+  my $field = $AUTOLOAD;
+  $field =~ s/.*:://;
+  shift->_field($field, @_)
+}
 
 1;

@@ -11,7 +11,11 @@ package MarpaX::ESLIF::URI::_generic;
 
 use Carp qw/croak/;
 use Class::Method::Modifiers qw/around/;
-use Class::Tiny qw/scheme authority userinfo host port path segments query fragment/;
+use Class::Tiny qw/scheme authority userinfo host port path segments query fragment/,
+  {
+   path => '',
+   segments => sub { [] }
+   };
 use Log::Any qw/$log/;
 use MarpaX::ESLIF;
 use MarpaX::ESLIF::URI::_generic::RecognizerInterface;
