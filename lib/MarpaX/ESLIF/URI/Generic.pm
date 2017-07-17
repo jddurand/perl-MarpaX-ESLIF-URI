@@ -73,8 +73,7 @@ sub stringify {
 sub clone {
   my ($self) = @_;
 
-  my $class = ref $self;
-  $class->new("$self")
+  __PACKAGE__->new("$self")
 }
 
 sub is_abs {
@@ -100,8 +99,7 @@ sub abs {
       my $quote_fragment = quotemeta($self->fragment);
       $string =~ s/#$quote_fragment$//;
 
-      my $class = ref $self;
-      $class->new($string)
+      __PACKAGE__->new($string)
   }
 }
 
