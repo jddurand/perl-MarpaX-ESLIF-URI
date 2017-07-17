@@ -94,16 +94,9 @@ Returns an exact clone of current instance.
 =cut
 
 sub clone {
-  my ($self, %forced) = @_;
+  my ($self) = @_;
 
-  local $MarpaX::ESLIF::URI::Generic::CLONE = 1;
-  return __PACKAGE__->new(
-                          (
-                           map {
-                             $_ => exists($forced{$_}) ? $forced{$_} : $self->$_
-                           } Class::Tiny->get_all_attributes_for(__PACKAGE__)
-                          )
-                         )
+  return $self->_clone
 }
 
 =head2 $self->is_abs
@@ -115,7 +108,7 @@ Returns a true value if the parsed URI is absolute, a false value otherwise.
 sub is_abs {
   my ($self) = @_;
 
-  defined($self->scheme) && ! defined($self->fragment)
+  return defined($self->scheme) && ! defined($self->fragment)
 }
 
 =head2 $self->base
@@ -128,13 +121,13 @@ sub base {
   my ($self) = @_;
 
   if ($self->is_abs) {
-    return $self->clone
+    return $self->_clone
   } else {
     #
     # We need the scheme
     #
     croak "Cannot derive a base URI without a scheme" unless defined $self->scheme;
-    return $self->clone(fragment => undef)
+    return $self->_clone(fragment => undef)
   }
 }
 
@@ -159,7 +152,20 @@ sub _parse {
     my $valueInterface = MarpaX::ESLIF::URI::Generic::ValueInterface->new();
 
     $GRAMMAR->parse($recognizerInterface, $valueInterface) || croak 'Parse failure';
-    $valueInterface->getResult || croak 'Parse value failure'
+    return $valueInterface->getResult || croak 'Parse value failure'
+}
+
+sub _clone {
+  my ($self, %forced) = @_;
+
+  local $MarpaX::ESLIF::URI::Generic::CLONE = 1;
+  return __PACKAGE__->new(
+                          (
+                           map {
+                             $_ => exists($forced{$_}) ? $forced{$_} : $self->$_
+                           } Class::Tiny->get_all_attributes_for(__PACKAGE__)
+                          )
+                         )
 }
 
 =head1 NOTES
