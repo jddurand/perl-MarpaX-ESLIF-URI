@@ -10,35 +10,149 @@ package MarpaX::ESLIF::URI::Generic;
 # VERSION
 
 use Carp qw/croak/;
-use Class::Tiny::Antlers qw/-all/;
+use Class::Method::Modifiers qw/around/;
+use Class::Tiny qw/scheme authority userinfo host port path segments query fragment/;
+use Log::Any qw/$log/;
 use MarpaX::ESLIF;
 use MarpaX::ESLIF::URI::Generic::RecognizerInterface;
 use MarpaX::ESLIF::URI::Generic::ValueInterface;
-use overload '""' => 'stringify', fallback => 1;
-
-has string     => (is => 'ro');
-has scheme     => (is => 'ro');
-has authority  => (is => 'ro');
-has userinfo   => (is => 'ro');
-has host       => (is => 'ro');
-has port       => (is => 'ro');
-has path       => (is => 'ro');
-has segments   => (is => 'ro');
-has query      => (is => 'ro');
-has fragment   => (is => 'ro');
 
 my $BNF = do { local $/; <DATA> };
-my $ESLIF = MarpaX::ESLIF->new();
+my $ESLIF = MarpaX::ESLIF->new($log);
 my $GRAMMAR = MarpaX::ESLIF::Grammar->new($ESLIF, $BNF);
+
+
+=head1 SUBROUTINES/METHODS
+
+=head2 $class->new($uri)
+
+Instantiate a new object, or croak on failure. Takes as parameter an URI that will be parsed. The object instance is noted C<$self> below.
+
+=cut
 
 sub BUILDARGS {
   my ($class, @args) = @_;
 
-  croak "Usage: $class->new(\$uri)" unless (@args == 1 && ! ref $args[0]);
-  $class->parse($args[0])
-};
+  if ($#args == 0) {
+    return $class->_parse($args[0])
+  } else {
+    croak "Usage: $class->new(\$uri)" unless $MarpaX::ESLIF::URI::Generic::CLONE;
+    return {@args}
+  }
+}
 
-sub parse {
+#
+# Class::Tiny generated methods
+#
+
+=head2 $self->scheme
+
+Returns the scheme, or undef.
+
+=head2 $self->authority
+
+Returns the decoded authority, or undef.
+
+=head2 $self->userinfo
+
+Returns the decoded userinfo, or undef.
+
+=head2 $self->host
+
+Returns the decoded host, or undef.
+
+=head2 $self->port
+
+Returns the port, or undef.
+
+=head2 $self->path
+
+Returns the decoded path, or the empty string.
+
+=head2 $self->segments
+
+Returns the path segments as an array reference, which may be empty.
+
+=head2 $self->query
+
+Returns the decoded query, or undef.
+
+=head2 $self->fragment
+
+Returns the decoded fragment, or undef.
+
+=cut
+
+#
+# Our additional methods
+#
+
+=head2 $self->clone
+
+Returns an exact clone of current instance.
+
+=cut
+
+sub clone {
+  my ($self, %forced) = @_;
+
+  local $MarpaX::ESLIF::URI::Generic::CLONE = 1;
+  return __PACKAGE__->new(
+                          (
+                           map {
+                             $_ => exists($forced{$_}) ? $forced{$_} : $self->$_
+                           } Class::Tiny->get_all_attributes_for(__PACKAGE__)
+                          )
+                         )
+}
+
+=head2 $self->is_abs
+
+Returns a true value if the parsed URI is absolute, a false value otherwise.
+
+=cut
+
+sub is_abs {
+  my ($self) = @_;
+
+  defined($self->scheme) && ! defined($self->fragment)
+}
+
+=head2 $self->base
+
+Returns a instance that is the absolute version of current instance if possible, or croak on failure.
+
+=cut
+
+sub base {
+  my ($self) = @_;
+
+  if ($self->is_abs) {
+    return $self->clone
+  } else {
+    #
+    # We need the scheme
+    #
+    croak "Cannot derive a base URI without a scheme" unless defined $self->scheme;
+    return $self->clone(fragment => undef)
+  }
+}
+
+#
+# Method modifiers: explicitely state the read-only mode on all methods
+#
+foreach my $method (Class::Tiny->get_all_attributes_for(__PACKAGE__)) {
+  around $method => sub {
+    my ($orig, $self, @args) = @_;
+    croak __PACKAGE__ . "::$method is read-only" if @args;
+    return $self->$orig
+  }
+}
+
+#
+# Internals
+#
+sub _parse {
     my ($class, $uri) = @_;
 
     my $recognizerInterface = MarpaX::ESLIF::URI::Generic::RecognizerInterface->new($uri);
@@ -48,60 +162,15 @@ sub parse {
     $valueInterface->getResult || croak 'Parse value failure'
 }
 
-sub stringify {
-  my ($self) = @_;
+=head1 NOTES
 
-  my $string = '';
+This package is L<Log::Any> aware, and will use the later in case parsing fails to output error messages.
 
-  my $scheme = $self->scheme;
-  $string .= "$scheme:" if defined $scheme;
-  
-  my $authority = $self->authority;
-  $string .= "//$authority" if defined $authority;
-  
-  $string .= $self->path;
+=head1 SEE ALSO
 
-  my $query = $self->query;
-  $string .= "?$query" if defined $query;
-  
-  my $fragment = $self->fragment;
-  $string .= "#$fragment" if defined $fragment;
-  
-  $string
-}
+L<MarpaX::ESLIF>, L<RFC3986|https://tools.ietf.org/html/rfc3986>, L<RFC6874|https://tools.ietf.org/html/rfc6874>
 
-sub clone {
-  my ($self) = @_;
-
-  __PACKAGE__->new("$self")
-}
-
-sub is_abs {
-    my ($self) = @_;
-
-    defined($self->scheme) && ! defined($self->fragment)
-}
-
-sub abs {
-  my ($self) = @_;
-
-  if ($self->is_abs) {
-      $self->clone;
-  } else {
-      #
-      # We need the scheme
-      #
-      croak "Cannot derive a base URI from $self: there is no scheme" unless defined $self->scheme;
-      #
-      # Here per def there is a fragment, the base URI is the current URI without this fragment
-      #
-      my $string = "$self";
-      my $quote_fragment = quotemeta($self->fragment);
-      $string =~ s/#$quote_fragment$//;
-
-      __PACKAGE__->new($string)
-  }
-}
+=cut
 
 1;
 

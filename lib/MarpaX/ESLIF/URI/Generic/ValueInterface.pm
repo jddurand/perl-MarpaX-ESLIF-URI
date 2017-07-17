@@ -4,34 +4,31 @@ use warnings FATAL => 'all';
 package MarpaX::ESLIF::URI::Generic::ValueInterface;
 
 sub new {
-    my ($class, %options) = @_;
+  my ($class, %options) = @_;
 
-    bless {
-        decode    => $options{decode},
-        result    => {
-            scheme    => undef,
-            authority => undef,
-            userinfo  => undef,
-            host      => undef,
-            port      => undef,
-            path      => '',
-            segments  => [],
-            query     => undef,
-            fragment => undef
-        }
-    }, $class
+  bless {
+         scheme    => undef,
+         authority => undef,
+         userinfo  => undef,
+         host      => undef,
+         port      => undef,
+         path      => '',
+         segments  => [],
+         query     => undef,
+         fragment => undef
+        }, $class
 }
 
 #
 # Value Interface required methods
 #
-sub isWithHighRankOnly {               1 } # When there is the rank adverb: highest ranks only ?
-sub isWithOrderByRank  {               1 } # When there is the rank adverb: order by rank ?
-sub isWithAmbiguous    {               0 } # Allow ambiguous parse ?
-sub isWithNull         {               0 } # Allow null parse ?
-sub maxParses          {               0 } # Maximum number of parse tree values - meaningless when !isWithAmbiguous
-sub setResult          {                 } # No-op here
-sub getResult          { $_[0]->{result} } # Result is the instance itself
+sub isWithHighRankOnly {     1 } # When there is the rank adverb: highest ranks only ?
+sub isWithOrderByRank  {     1 } # When there is the rank adverb: order by rank ?
+sub isWithAmbiguous    {     0 } # Allow ambiguous parse ?
+sub isWithNull         {     0 } # Allow null parse ?
+sub maxParses          {     0 } # Maximum number of parse tree values - meaningless when !isWithAmbiguous
+sub setResult          {       } # No-op here
+sub getResult          { $_[0] } # Result
 
 #
 # Grammar specific actions
@@ -40,7 +37,7 @@ sub segment {
     my ($self, @args) = @_;
 
     my $rc = join('', map { $_ // '' } @args);
-    push(@{$self->{result}->{segments}}, $rc);
+    push(@{$self->{segments}}, $rc);
     $rc
 }
 
@@ -48,13 +45,12 @@ sub segment {
 sub pct_encoded {
     my ($self, $pctcharacter, $hex1, $hex2) = @_;
 
-    $MarpaX::ESLIF::URI::Generic2::DECODE ? chr(hex("$hex1$hex2")) : "$pctcharacter$hex1$hex2"
+    chr(hex("$hex1$hex2"))
 }
 
 sub _generic {
     my ($self, $what, @args) = @_;
-
-    $self->{result}->{$what} = join('', map { $_ // '' } @args)
+    $self->{$what} = join('', map { $_ // '' } @args)
 }
 
 sub scheme    { shift->_generic('scheme',    @_) }

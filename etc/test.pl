@@ -28,34 +28,31 @@ Log::Any::Adapter->set('Log4perl');
 while (@ARGV) {
   print "From argument...:\n";
   my $uri;
-  #eval {
+  eval {
       $uri = MarpaX::ESLIF::URI->new(shift @ARGV);
       local %Data::Scan::Printer::Option = (with_ansicolor => 0);
       dspp($uri);
       print "\n";
-      print "Stringification: $uri\n";
-  #};
-  #print "$@" if $@;
+  };
+  print "$@" if $@;
 
   print "\nFrom clone...:\n";
-  my $clone;
-  {
-      $clone = $uri->clone;
-      local %Data::Scan::Printer::Option = (with_ansicolor => 0);
-      dspp($clone);
-      print "\n";
-      print "Stringification: $clone\n";
+  eval {
+    my $clone = $uri->clone;
+    local %Data::Scan::Printer::Option = (with_ansicolor => 0);
+    dspp($clone);
+    print "\n";
   };
   print "$@" if $@;
 
-  print "\nFrom abs...:\n";
+  print "\nFrom base...:\n";
   eval {
-    my $abs = $uri->abs;
+    my $base = $uri->base;
     local %Data::Scan::Printer::Option = (with_ansicolor => 0);
-    dspp($abs);
+    dspp($base);
     print "\n";
-    print "Stringification: $abs\n";
   };
   print "$@" if $@;
+
 }
 
