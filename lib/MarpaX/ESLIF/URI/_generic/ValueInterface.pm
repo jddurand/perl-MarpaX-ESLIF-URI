@@ -44,12 +44,12 @@ sub _field {
 }
 
 #
-# The hash it automatically generated
+# Any unsupported method is an instance attribute of the caller
 #
 sub AUTOLOAD {
   my $field = $AUTOLOAD;
   $field =~ s/.*:://;
-  shift->_field($field, @_)
+  shift->{$field} = join('', map { $_ // '' } @_)
 }
 
 1;
