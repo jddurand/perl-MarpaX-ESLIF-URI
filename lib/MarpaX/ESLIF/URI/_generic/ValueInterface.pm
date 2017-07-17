@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-package MarpaX::ESLIF::URI::Generic::ValueInterface;
+package MarpaX::ESLIF::URI::_generic::ValueInterface;
 
 sub new {
   my ($class, %options) = @_;
@@ -33,7 +33,7 @@ sub getResult          { $_[0] } # Result
 #
 # Grammar specific actions
 #
-sub segment {
+sub _segment {
     my ($self, @args) = @_;
 
     my $rc = join('', map { $_ // '' } @args);
@@ -42,24 +42,24 @@ sub segment {
 }
 
 # Specific value methods. Default is to NOT decode.
-sub pct_encoded {
+sub _pct_encoded {
     my ($self, $pctcharacter, $hex1, $hex2) = @_;
 
     chr(hex("$hex1$hex2"))
 }
 
-sub _generic {
+sub _field {
     my ($self, $what, @args) = @_;
     $self->{$what} = join('', map { $_ // '' } @args)
 }
 
-sub scheme    { shift->_generic('scheme',    @_) }
-sub authority { shift->_generic('authority', @_) }
-sub userinfo  { shift->_generic('userinfo',  @_) }
-sub host      { shift->_generic('host',      @_) }
-sub port      { shift->_generic('port',      @_) }
-sub path      { shift->_generic('path',      @_) }
-sub query     { shift->_generic('query',     @_) }
-sub fragment  { shift->_generic('fragment',  @_) }
+sub scheme    { shift->_field('scheme',    @_) }
+sub authority { shift->_field('authority', @_) }
+sub userinfo  { shift->_field('userinfo',  @_) }
+sub host      { shift->_field('host',      @_) }
+sub port      { shift->_field('port',      @_) }
+sub path      { shift->_field('path',      @_) }
+sub query     { shift->_field('query',     @_) }
+sub fragment  { shift->_field('fragment',  @_) }
 
 1;

@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-package MarpaX::ESLIF::URI::Generic::RecognizerInterface;
+package MarpaX::ESLIF::URI::_generic::RecognizerInterface;
 #
 # Optimized constructor
 #

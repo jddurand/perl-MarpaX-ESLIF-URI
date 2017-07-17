@@ -1,7 +1,7 @@
 use strict;
 use warnings FATAL => 'all';
 
-package MarpaX::ESLIF::URI::Generic;
+package MarpaX::ESLIF::URI::_generic;
 
 # ABSTRACT: URI Generic syntax as per RFC3986/RFC6874
 
@@ -14,13 +14,21 @@ use Class::Method::Modifiers qw/around/;
 use Class::Tiny qw/scheme authority userinfo host port path segments query fragment/;
 use Log::Any qw/$log/;
 use MarpaX::ESLIF;
-use MarpaX::ESLIF::URI::Generic::RecognizerInterface;
-use MarpaX::ESLIF::URI::Generic::ValueInterface;
+use MarpaX::ESLIF::URI::_generic::RecognizerInterface;
+use MarpaX::ESLIF::URI::_generic::ValueInterface;
 
-my $BNF = do { local $/; <DATA> };
+#
+# Constant
+#
+our $BNF = do { local $/; <DATA> };
+#
+# ESLIF singleton
+#
 my $ESLIF = MarpaX::ESLIF->new($log);
-my $GRAMMAR = MarpaX::ESLIF::Grammar->new($ESLIF, $BNF);
-
+#
+# Grammar singleton, built using class methods
+#
+my $GRAMMAR;
 
 =head1 SUBROUTINES/METHODS
 
@@ -36,9 +44,21 @@ sub BUILDARGS {
   if ($#args == 0) {
     return $class->_parse($args[0])
   } else {
-    croak "Usage: $class->new(\$uri)" unless $MarpaX::ESLIF::URI::Generic::CLONE;
+    croak "Usage: $class->new(\$uri)" unless $MarpaX::ESLIF::URI::_generic::CLONE;
     return {@args}
   }
+}
+
+=head2 $class->bnf
+
+Returns the grammar used to parse a URI using the generic syntax.
+
+=cut
+
+sub bnf {
+  my ($class) = @_;
+
+  return $BNF
 }
 
 #
@@ -137,7 +157,8 @@ sub base {
 foreach my $method (Class::Tiny->get_all_attributes_for(__PACKAGE__)) {
   around $method => sub {
     my ($orig, $self, @args) = @_;
-    croak __PACKAGE__ . "::$method is read-only" if @args;
+    my $class = ref($self);
+    croak "$class::$method is read-only" if @args;
     return $self->$orig
   }
 }
@@ -145,27 +166,35 @@ foreach my $method (Class::Tiny->get_all_attributes_for(__PACKAGE__)) {
 #
 # Internals
 #
+
+sub _grammar {
+  my ($class) = @_;
+
+  return $GRAMMAR //= MarpaX::ESLIF::Grammar->new($ESLIF, $class->bnf)
+}
+
 sub _parse {
     my ($class, $uri) = @_;
 
-    my $recognizerInterface = MarpaX::ESLIF::URI::Generic::RecognizerInterface->new($uri);
-    my $valueInterface = MarpaX::ESLIF::URI::Generic::ValueInterface->new();
+    my $recognizerInterface = MarpaX::ESLIF::URI::_generic::RecognizerInterface->new($uri);
+    my $valueInterface = MarpaX::ESLIF::URI::_generic::ValueInterface->new();
 
-    $GRAMMAR->parse($recognizerInterface, $valueInterface) || croak 'Parse failure';
+    $class->_grammar->parse($recognizerInterface, $valueInterface) || croak 'Parse failure';
     return $valueInterface->getResult || croak 'Parse value failure'
 }
 
 sub _clone {
   my ($self, %forced) = @_;
 
-  local $MarpaX::ESLIF::URI::Generic::CLONE = 1;
-  return __PACKAGE__->new(
-                          (
-                           map {
-                             $_ => exists($forced{$_}) ? $forced{$_} : $self->$_
-                           } Class::Tiny->get_all_attributes_for(__PACKAGE__)
-                          )
-                         )
+  local $MarpaX::ESLIF::URI::_generic::CLONE = 1;
+  my $class = ref($self);
+  return $class->new(
+                     (
+                      map {
+                        $_ => exists($forced{$_}) ? $forced{$_} : $self->$_
+                      } Class::Tiny->get_all_attributes_for($class)
+                     )
+                    )
 }
 
 =head1 NOTES
@@ -174,14 +203,16 @@ This package is L<Log::Any> aware, and will use the later in case parsing fails 
 
 =head1 SEE ALSO
 
-L<MarpaX::ESLIF>, L<RFC3986|https://tools.ietf.org/html/rfc3986>, L<RFC6874|https://tools.ietf.org/html/rfc6874>
+L<, L<MarpaX::ESLIF::URI>, L<RFC3986|https://tools.ietf.org/html/rfc3986>, L<RFC6874|https://tools.ietf.org/html/rfc6874>
 
 =cut
 
 1;
 
 __DATA__
-:start ::= <URI reference>
+# :start ::= <URI reference>
+<URI reference>          ::= <URI>
+                           | <relative ref>
 #
 # Reference: https://tools.ietf.org/html/rfc3986#appendix-A
 # Reference: https://tools.ietf.org/html/rfc6874
@@ -197,8 +228,6 @@ __DATA__
                            | <path rootless>
                            | <path empty>
 
-<URI reference>          ::= <URI>
-                           | <relative ref>
 
 <absolute URI>           ::= <scheme> ":" <hier part> <URI query>
 
@@ -321,10 +350,10 @@ __DATA__
 <path rootless value>    ::= <segment nz> <path abempty>
 <path empty>             ::=                                                                # Default value for path is ''
 
-<segment>                ::= <pchar>*                                                       action => segment
-<segment nz>             ::= <pchar>+                                                       action => segment
+<segment>                ::= <pchar>*                                                       action => _segment
+<segment nz>             ::= <pchar>+                                                       action => _segment
 <segment nz nc unit>     ::= <unreserved> | <pct encoded> | <sub delims> | "@" # non-zero-length segment without any colon ":"
-<segment nz nc>          ::= <segment nz nc unit>+                                          action => segment
+<segment nz nc>          ::= <segment nz nc unit>+                                          action => _segment
 
 <pchar>                  ::= <unreserved> | <pct encoded> | <sub delims> | ":" | "@"
 
@@ -336,7 +365,7 @@ __DATA__
 <fragment>               ::= <fragment value>                                               action => fragment
 <fragment value>         ::= <fragment unit>*
 
-<pct encoded>            ::= "%" <HEXDIG> <HEXDIG>                                          action => pct_encoded
+<pct encoded>            ::= "%" <HEXDIG> <HEXDIG>                                          action => _pct_encoded
 
 <unreserved>             ::= <ALPHA> | <DIGIT> | "-" | "." | "_" | "~"
 <reserved>               ::= <gen delims> | <sub delims>
