@@ -16,16 +16,16 @@ use MarpaX::ESLIF::URI::Generic::RecognizerInterface;
 use MarpaX::ESLIF::URI::Generic::ValueInterface;
 use overload '""' => 'stringify', fallback => 1;
 
-has string     => (is => 'rwp');
-has scheme     => (is => 'rwp');
-has authority  => (is => 'rwp');
-has userinfo   => (is => 'rwp');
-has host       => (is => 'rwp');
-has port       => (is => 'rwp');
-has path       => (is => 'rwp');
-has segments   => (is => 'rwp');
-has query      => (is => 'rwp');
-has fragment   => (is => 'rwp');
+has string     => (is => 'ro');
+has scheme     => (is => 'ro');
+has authority  => (is => 'ro');
+has userinfo   => (is => 'ro');
+has host       => (is => 'ro');
+has port       => (is => 'ro');
+has path       => (is => 'ro');
+has segments   => (is => 'ro');
+has query      => (is => 'ro');
+has fragment   => (is => 'ro');
 
 my $BNF = do { local $/; <DATA> };
 my $ESLIF = MarpaX::ESLIF->new();
