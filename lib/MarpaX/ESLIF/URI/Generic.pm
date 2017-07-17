@@ -10,217 +10,99 @@ package MarpaX::ESLIF::URI::Generic;
 # VERSION
 
 use Carp qw/croak/;
-use Class::Tiny qw/input
-                   scheme
-                   authority
-                   path
-                   segments
-                   query
-                   fragment
-                  /;
+use Class::Tiny::Antlers qw/-all/;
 use MarpaX::ESLIF;
 use MarpaX::ESLIF::URI::Generic::RecognizerInterface;
 use MarpaX::ESLIF::URI::Generic::ValueInterface;
-use Scalar::Util qw/blessed/;
 use overload '""' => 'stringify', fallback => 1;
 
-my $_BNF = do { local $/; <DATA> };
-my $_ESLIF = MarpaX::ESLIF->new();
-my $_GRAMMAR = MarpaX::ESLIF::Grammar->new($_ESLIF, $_BNF);
+has string     => (is => 'rwp');
+has scheme     => (is => 'rwp');
+has authority  => (is => 'rwp');
+has userinfo   => (is => 'rwp');
+has host       => (is => 'rwp');
+has port       => (is => 'rwp');
+has path       => (is => 'rwp');
+has segments   => (is => 'rwp');
+has query      => (is => 'rwp');
+has fragment   => (is => 'rwp');
+
+my $BNF = do { local $/; <DATA> };
+my $ESLIF = MarpaX::ESLIF->new();
+my $GRAMMAR = MarpaX::ESLIF::Grammar->new($ESLIF, $BNF);
 
 sub BUILDARGS {
   my ($class, @args) = @_;
 
-  croak "Usage: " . __PACKAGE__ . "->new(\$input)" unless (@args == 1 && ! ref $args[0]);
-  { input => $args[0] }
+  croak "Usage: $class->new(\$uri)" unless (@args == 1 && ! ref $args[0]);
+  $class->parse($args[0])
 };
 
-sub reconstruct {
-  my ($self, %from) = @_;
+sub parse {
+    my ($class, $uri) = @_;
 
-  my $string;
+    my $recognizerInterface = MarpaX::ESLIF::URI::Generic::RecognizerInterface->new($uri);
+    my $valueInterface = MarpaX::ESLIF::URI::Generic::ValueInterface->new();
 
-  my $scheme = exists($from{scheme}) ? $from{scheme} : $self->scheme;
-  $string .= "$scheme:" if defined($scheme);
-
-  my $authority = exists($from{authority}) ? $from{authority} : $self->authority;
-  $string .= "//$authority" if defined($authority);
-
-  $string .= exists($from{path}) ? $from{path} : $self->path;
-
-  my $query = exists($from{query}) ? $from{query} : $self->query;
-  $string .= "?$query" if defined($query);
-
-  my $fragment = exists($from{fragment}) ? $from{fragment} : $self->fragment;
-  $string .= "#$fragment" if defined($fragment);
-
-  $string
-}
-
-sub BUILD {
-  my ($self) = @_;
-  #
-  # Parse and get result
-  #
-  my $recognizerInterface = MarpaX::ESLIF::URI::Generic::RecognizerInterface->new($self->input);
-  my $valueInterface = MarpaX::ESLIF::URI::Generic::ValueInterface->new();
-  $_GRAMMAR->parse($recognizerInterface, $valueInterface) || croak 'Parse failure';
-
-  my $result = $valueInterface->getResult || croak "Invalid input";
-  foreach (keys %{$result}) {
-    $self->$_($result->{$_})
-  }
-}
-
-sub is_absolute {
-  my ($self) = @_;
-
-  (defined($self->scheme) && ! defined($self->fragment)) ? 1 : 0
+    $GRAMMAR->parse($recognizerInterface, $valueInterface) || croak 'Parse failure';
+    $valueInterface->getResult || croak 'Parse value failure'
 }
 
 sub stringify {
   my ($self) = @_;
 
-  $self->input
+  my $string = '';
+
+  my $scheme = $self->scheme;
+  $string .= "$scheme:" if defined $scheme;
+  
+  my $authority = $self->authority;
+  $string .= "//$authority" if defined $authority;
+  
+  $string .= $self->path;
+
+  my $query = $self->query;
+  $string .= "?$query" if defined $query;
+  
+  my $fragment = $self->fragment;
+  $string .= "#$fragment" if defined $fragment;
+  
+  $string
 }
 
 sub clone {
   my ($self) = @_;
 
-  __PACKAGE__->new("$self")
+  my $class = ref $self;
+  $class->new("$self")
 }
 
-sub base {
+sub is_abs {
+    my ($self) = @_;
+
+    defined($self->scheme) && ! defined($self->fragment)
+}
+
+sub abs {
   my ($self) = @_;
 
-  if ($self->is_absolute) {
-    #
-    # We are already a base URI
-    #
-    $self->clone
+  if ($self->is_abs) {
+      $self->clone;
   } else {
-    #
-    # We need the scheme
-    #
-    croak "Cannot derive a base URI from $self: there is no scheme" unless defined $self->scheme;
-    #
-    # Here per def there is a fragment, the base URI is the current URI without this fragment
-    #
-    __PACKAGE__->new($self->reconstruct(fragment => undef))
+      #
+      # We need the scheme
+      #
+      croak "Cannot derive a base URI from $self: there is no scheme" unless defined $self->scheme;
+      #
+      # Here per def there is a fragment, the base URI is the current URI without this fragment
+      #
+      my $string = "$self";
+      my $quote_fragment = quotemeta($self->fragment);
+      $string =~ s/#$quote_fragment$//;
+
+      my $class = ref $self;
+      $class->new($string)
   }
-}
-
-sub rebase {
-  my ($R, $Base, $strict) = @_;
-
-  $R    = __PACKAGE__->new("$R")    unless (blessed($R)    // '') eq __PACKAGE__;
-  $Base = __PACKAGE__->new("$Base") unless (blessed($Base) // '') eq __PACKAGE__;
-
-  croak 'Base must be an absolute URI' unless $Base->is_absolute;
-
-  my (%R, %Base);
-  map { $R{$_}    = $R->$_    } qw/scheme authority path query segments/;
-  map { $Base{$_} = $Base->$_ } qw/scheme authority path query segments/;
-  #
-  # A non-strict parser may ignore a scheme in the reference
-  # if it is identical to the base URI's scheme.
-  #
-  # Per def $Base{scheme} is defined
-  # $R{scheme} may be undefined
-  #
-  if ((! $strict) && defined($R{scheme}) && ($R{scheme} eq $Base{scheme})) {
-    $R{scheme} = undef
-  }
-
-  my %T;
-  if (defined($R{scheme})) {
-    $T{scheme}    = $R{scheme};
-    $T{authority} = $R{authority};
-    $T{path}      = __PACKAGE__->remove_dot_segments($R{path});
-    $T{query}     = $R{query}
-  } else {
-    if (defined($R{authority})) {
-      $T{authority} = $R{authority};
-      $T{path}      = __PACKAGE__->remove_dot_segments($R{path});
-      $T{query}     = $R{query}
-    } else {
-      if (! length($R{path})) {
-        $T{path} = $Base{path};
-        if (defined($R{query})) {
-          $T{query} = $R{query}
-        } else {
-          $T{query} = $Base{query}
-        }
-      } else {
-        if (substr($R{path}, 0, 1) eq '/') {
-          $T{path} = __PACKAGE__->remove_dot_segments($R{path})
-        } else {
-          $T{path} = __PACKAGE__->merge($Base, $R);
-          $T{path} = __PACKAGE__->remove_dot_segments($T{path})
-        }
-        $T{query} = $R{query};
-      }
-      $T{authority} = $Base{authority};
-    }
-    $T{scheme} = $Base{scheme};
-  }
-
-  $T{fragment} = $R{fragment};
-
-  #
-  # We construct a full stringified version of T
-  #
-  my $T = '';
-  $T .= $T{scheme} . ':' if (defined($T{scheme}));
-  $T .= '//' . $T{authority} if (defined($T{authority}));
-  $T .= $T{path};
-  $T .= '?' . $T{query} if (defined($T{query}));
-  $T .= '#' . $T{fragment} if (defined($T{fragment}));
-
-  return __PACKAGE__->new($T)
-}
-
-sub merge {
-  my ($class, $Base, $R) = @_;
-
-  if (defined($Base->authority) && ! length($Base->path)) {
-    return '/' . $R->path
-  } else {
-    my $path = $Base->path;                # If empty then ./..
-    my @segment = @{$Base->segments};      # ../. no segment -;
-    if (@segment) {
-      my $quote_last_segment = quotemeta($segment[-1]);
-      $path =~ s/$quote_last_segment$//;
-    }
-    return $path . $R->path
-  }
-}
-
-sub remove_dot_segments {
-  my ($class, $input) = @_;
-
-  my $output = '';
-  while (length($input) > 0) {
-    if (($input =~/^\.\.\//p) || ($input =~ /^\.\//p)) {
-      substr($input, 0, length(${^MATCH}), '')
-    } elsif (($input =~/^\/\.\//p) || ($input =~ /^\/\.(?:\/|\z)/p)) {
-      substr($input, 0, length(${^MATCH}), '/')
-    } elsif (($input =~/^\/\.\.\//p) || ($input =~ /^\/\.\.(?:\/|\z)/p)) {
-      substr($input, 0, length(${^MATCH}), '/');
-      $output =~ s/\/?[^\/]*$//
-    } elsif ($input eq '.') {
-      substr($input, 0, 1, '')
-    } elsif ($input eq '..') {
-      substr($input, 0, 2, '')
-    } else {
-    }
-  }
-}
-
-sub compare {
-    my ($self1, $self2, $swap) = @_;
-
-    return "$self1" cmp "$self2" # TO DO
 }
 
 1;
@@ -240,7 +122,7 @@ __DATA__
 <hier part>              ::= "//" <authority> <path abempty>
                            | <path absolute>
                            | <path rootless>
-                           | <path empty>                                                   action => path # Marpa does not call <path empty> rule (!?)
+                           | <path empty>
 
 <URI reference>          ::= <URI>
                            | <relative ref>
@@ -252,9 +134,10 @@ __DATA__
 <relative part>          ::= "//" <authority> <path abempty>
                            | <path absolute>
                            | <path noscheme>
-                           | <path empty>                                                    action => path # Marpa does not call <path empty> rule (!?)
+                           | <path empty>
 
-<scheme>                 ::= <ALPHA> <scheme trailer>                                        action => scheme
+<scheme>                 ::= <scheme value>                                                 action => scheme
+<scheme value>           ::= <ALPHA> <scheme trailer>
 <scheme trailer unit>    ::= <ALPHA> | <DIGIT> | "+" | "-" | "."
 <scheme trailer>         ::= <scheme trailer unit>*
 
@@ -262,9 +145,11 @@ __DATA__
 <authority userinfo>     ::=
 <authority port>         ::= ":" <port>
 <authority port>         ::=
-<authority>              ::= <authority userinfo> <host> <authority port>                    action => authority
+<authority>              ::= <authority value>                                              action => authority
+<authority value>        ::= <authority userinfo> <host> <authority port>
 <userinfo unit>          ::= <unreserved> | <pct encoded> | <sub delims> | ":"
-<userinfo>               ::= <userinfo unit>*
+<userinfo>               ::= <userinfo value>                                               action => userinfo
+<userinfo value>         ::= <userinfo unit>*
 #
 # The syntax rule for host is ambiguous because it does not completely
 # distinguish between an IPv4address and a reg-name.  In order to
@@ -272,10 +157,11 @@ __DATA__
 # If host matches the rule for IPv4address, then it should be
 # considered an IPv4 address literal and not a reg-name.
 #
-<host>                   ::= <IP literal>            rank =>  0
-                           | <IPv4address>           rank => -1
-                           | <reg name>              rank => -2
-<port>                   ::= <DIGIT>*
+<host>                   ::= <IP literal>            rank =>  0                             action => host
+                           | <IPv4address>           rank => -1                             action => host
+                           | <reg name>              rank => -2                             action => host
+<port>                   ::= <port value>                                                   action => port
+<port value>             ::= <DIGIT>*
 
 <IP literal interior>    ::= <IPv6address> | <IPv6addrz> | <IPvFuture>
 <IP literal>             ::= "[" <IP literal interior> "]"
@@ -351,12 +237,16 @@ __DATA__
                            | <path empty>                                                   # zero characters
 
 <path abempty unit>      ::= "/" <segment>
-<path abempty>           ::= <path abempty unit>*                                           action => path
-<path absolute>          ::= "/"                                                            action => path
-                           | "/" <segment nz> <path abempty>                                action => path
-<path noscheme>          ::= <segment nz nc> <path abempty>                                 action => path
-<path rootless>          ::= <segment nz> <path abempty>                                    action => path
-<path empty>             ::=                                                                # action => path
+<path abempty>           ::= <path abempty value>                                           action => path
+<path abempty value>     ::= <path abempty unit>*
+<path absolute>          ::= <path absolute value>                                          action => path
+<path absolute value>    ::= "/"
+                           | "/" <segment nz> <path abempty>
+<path noscheme>          ::= <path noscheme value>                                          action => path
+<path noscheme value>    ::= <segment nz nc> <path abempty>
+<path rootless>          ::= <path rootless value>                                          action => path
+<path rootless value>    ::= <segment nz> <path abempty>
+<path empty>             ::=                                                                # Default value for path is ''
 
 <segment>                ::= <pchar>*                                                       action => segment
 <segment nz>             ::= <pchar>+                                                       action => segment
@@ -366,12 +256,14 @@ __DATA__
 <pchar>                  ::= <unreserved> | <pct encoded> | <sub delims> | ":" | "@"
 
 <query unit>             ::= <pchar> | "/" | "?"
-<query>                  ::= <query unit>*                                                  action => query
+<query>                  ::= <query value>                                                  action => query
+<query value>            ::= <query unit>*
 
 <fragment unit>          ::= <pchar> | "/" | "?"
-<fragment>               ::= <fragment unit>*                                               action => fragment
+<fragment>               ::= <fragment value>                                               action => fragment
+<fragment value>         ::= <fragment unit>*
 
-<pct encoded>            ::= "%" <HEXDIG> <HEXDIG> #                                          action => pct_encoded
+<pct encoded>            ::= "%" <HEXDIG> <HEXDIG>                                          action => pct_encoded
 
 <unreserved>             ::= <ALPHA> | <DIGIT> | "-" | "." | "_" | "~"
 <reserved>               ::= <gen delims> | <sub delims>
