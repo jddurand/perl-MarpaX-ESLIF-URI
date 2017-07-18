@@ -11,7 +11,7 @@ package MarpaX::ESLIF::URI::_generic;
 
 use Carp qw/croak/;
 use Class::Method::Modifiers qw/around/;
-use Class::Tiny qw/scheme authority userinfo host ip ipv4 ipv6 ipvx zone port path segments query fragment/,
+use Class::Tiny qw/string absolute relative scheme authority userinfo host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque/,
   {
    path => '',
    segments => sub { [] }
@@ -20,6 +20,7 @@ use Log::Any qw/$log/;
 use MarpaX::ESLIF;
 use MarpaX::ESLIF::URI::_generic::RecognizerInterface;
 use MarpaX::ESLIF::URI::_generic::ValueInterface;
+use overload '""' => 'as_string', fallback => 1;
 
 #
 # Constant
@@ -68,6 +69,18 @@ sub bnf {
 #
 # Class::Tiny generated methods
 #
+
+=head2 $self->string
+
+Returns the unescaped string version of the URI.
+
+=head2 $self->URI
+
+Returns the unescaped string version of the URI, when this is an absolute URI.
+
+=head2 $self->relative
+
+Returns the unescaped string version of the URI, when this is a relative URI.
 
 =head2 $self->scheme
 
@@ -125,6 +138,10 @@ Returns the decoded query, or undef.
 
 Returns the decoded fragment, or undef.
 
+=head2 $self->opaque
+
+Returns the part between scheme and fragment.
+
 =cut
 
 #
@@ -143,6 +160,30 @@ sub clone {
   return $self->_clone
 }
 
+=head2 $self->has_recognized_scheme
+
+Returns a true value if the scheme is recognized.
+
+=cut
+
+sub has_recognized_scheme {
+  my ($self) = @_;
+
+  return defined($self->scheme)
+}
+
+=head2 $self->as_string
+
+Returns the unescaped string of the URI, which is always a valid Perl-extended UTF-8 string. This is also what prints out the stringification of C<$self>.
+
+=cut
+
+sub as_string {
+  my ($self) = @_;
+
+  return $self->string
+}
+
 =head2 $self->is_abs
 
 Returns a true value if the parsed URI is absolute, a false value otherwise.
@@ -152,7 +193,7 @@ Returns a true value if the parsed URI is absolute, a false value otherwise.
 sub is_abs {
   my ($self) = @_;
 
-  return defined($self->scheme) && ! defined($self->fragment)
+  return defined($self->absolute)
 }
 
 =head2 $self->base
@@ -165,7 +206,7 @@ sub base {
   my ($self) = @_;
 
   if ($self->is_abs) {
-    return $self->_clone
+    return $self
   } else {
     #
     # We need the scheme
@@ -235,13 +276,14 @@ L<MarpaX::ESLIF::URI>, L<RFC3986|https://tools.ietf.org/html/rfc3986>, L<RFC6874
 
 __DATA__
 # :start ::= <URI reference>
-<URI reference>          ::= <URI>
-                           | <relative ref>
+<URI reference>          ::= <URI>                                                          action => string
+                           | <relative ref>                                                 action => string
 #
 # Reference: https://tools.ietf.org/html/rfc3986#appendix-A
 # Reference: https://tools.ietf.org/html/rfc6874
 #
-<URI>                    ::= <scheme> ":" <hier part> <URI query> <URI fragment>
+<URI opaque>             ::= <hier part> <URI query>                                        action => opaque
+<URI>                    ::= <scheme> ":" <URI opaque> <URI fragment>                       action => absolute
 <URI query>              ::= "?" <query>
 <URI query>              ::=
 <URI fragment>           ::= "#" <fragment>
@@ -255,7 +297,8 @@ __DATA__
 
 <absolute URI>           ::= <scheme> ":" <hier part> <URI query>
 
-<relative ref>           ::= <relative part> <URI query> <URI fragment>
+<relative ref opaque>    ::= <relative part> <URI query>                                    action => opaque
+<relative ref>           ::= <relative ref opaque> <URI fragment>                           action => relative
 
 <relative part>          ::= "//" <authority> <path abempty>
                            | <path absolute>
