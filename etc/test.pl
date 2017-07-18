@@ -33,6 +33,7 @@ while (@ARGV) {
       local %Data::Scan::Printer::Option = (with_ansicolor => 0);
       dspp($uri);
       print "\n";
+      print "Stringification: $uri\n";
   };
   print "$@" if $@;
 
@@ -42,6 +43,7 @@ while (@ARGV) {
     local %Data::Scan::Printer::Option = (with_ansicolor => 0);
     dspp($clone);
     print "\n";
+    print "Stringification: $clone\n";
   };
   print "$@" if $@;
 
@@ -51,6 +53,7 @@ while (@ARGV) {
     local %Data::Scan::Printer::Option = (with_ansicolor => 0);
     dspp($base);
     print "\n";
+    print "Stringification: $base\n";
   };
   print "$@" if $@;
 
