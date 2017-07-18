@@ -40,33 +40,38 @@ __DATA__
 <file hier part> ::= "//" <auth path>
                    | <local path>
 
+#
+# <auth path> is generating ambiguity
+#
 <auth path>      ::= <file auth> <path absolute>
                    |             <path absolute>
-                   | <file auth> <file absolute>
-                   |             <file absolute>
+                   | <file auth> <file absolute> rank => 1
+                   |             <file absolute> rank => 1
                    | <unc authority> <path absolute>
 
 <local path>     ::= <drive letter> <path absolute>
                    |                <path absolute>
                    |                <file absolute>
 
-<unc authority>  ::= "//" <file host>                             action => authority
-                   | "///" <file host>                            action => authority
+<unc authority>  ::= "//" <file host>                              action => authority
+                   | "///" <file host>                             action => authority
 
-<file host>      ::= <inline IP>                                  action => host
-                   | IPv4address                                  action => host
-                   | <reg name>                                   action => host
+<file host>      ::= <inline IP>                                   action => host
+                   | IPv4address                                   action => host
+                   | <reg name>                                    action => host
 
 <inline IP>      ::= "%5B" <IPv6address> "%5D"
                    | "%5B" <IPvFuture> "%5D"
 
 <file absolute>  ::= "/" <drive letter> <path absolute>
 
-<drive letter>   ::= ALPHA ":"                                     action => drive
-                   | ALPHA "|"                                     action => drive
+<drive>          ::= ALPHA                                         action => drive
 
-<file auth>      ::= userinfo "@" <host>                           action => authority
-                   |              <host>                           action => authority
+<drive letter>   ::= <drive> ":"
+                   | <drive> "|"
+
+<file auth>      ::= <userinfo> "@" <host>                         action => authority
+                   |                <host>                         action => authority
 
 <host>           ::= "localhost"                                   action => host
 #
