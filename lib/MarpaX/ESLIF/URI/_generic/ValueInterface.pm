@@ -3,6 +3,7 @@ use warnings FATAL => 'all';
 
 package MarpaX::ESLIF::URI::_generic::ValueInterface;
 use vars qw/$AUTOLOAD/;
+use Class::Method::Modifiers qw/fresh/;
 
 sub new {
   my ($class) = @_;
@@ -43,13 +44,19 @@ sub _field {
     $self->{$what} = join('', map { $_ // '' } @args)
 }
 
+sub DESTROY {}
 #
-# Any unsupported method is an instance attribute of the caller
+# Any other method is added on-the-fly
 #
 sub AUTOLOAD {
   my $field = $AUTOLOAD;
   $field =~ s/.*:://;
-  shift->{$field} = join('', map { $_ // '' } @_)
+
+  fresh $field => sub {
+      my ($self, @args) = @_;
+      $self->{$field} = join('', map { $_ // '' } @args)
+  };
+  goto &$field
 }
 
 1;
