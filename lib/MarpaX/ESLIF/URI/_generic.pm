@@ -11,7 +11,7 @@ package MarpaX::ESLIF::URI::_generic;
 
 use Carp qw/croak/;
 use Class::Method::Modifiers qw/around/;
-use Class::Tiny qw/scheme authority userinfo host port path segments query fragment/,
+use Class::Tiny qw/scheme authority userinfo host ip ipv4 ipv6 ipvx zone port path segments query fragment/,
   {
    path => '',
    segments => sub { [] }
@@ -83,7 +83,27 @@ Returns the decoded userinfo, or undef.
 
 =head2 $self->host
 
-Returns the decoded host, or undef.
+Returns the decoded host (which may contain C<[]> delimiters in case of Ipv6 literal), or undef.
+
+=head2 $self->ip
+
+Returns the decoded ip when host is an IP literal, or undef.
+
+=head2 $self->ipv4
+
+Returns the decoded IPv4 when host is an IP of such type, or undef.
+
+=head2 $self->ipv6
+
+Returns the decoded IPv6 when host is an IP of such type, or undef.
+
+=head2 $self->ipvx
+
+Returns the decoded IPvI<future> (as per the spec) when host is an IP of such type, or undef.
+
+=head2 $self->zone
+
+Returns the decoded IP Zone Id when host is an IPv6 literal, or undef.
 
 =head2 $self->port
 
@@ -269,32 +289,34 @@ __DATA__
 <port>                   ::= <port value>                                                   action => port
 <port value>             ::= <DIGIT>*
 
-<IP literal interior>    ::= <IPv6address> | <IPv6addrz> | <IPvFuture>
+<IP literal interior>    ::= <IPv6address>                                                  action => ip
+                           | <IPv6addrz>                                                    action => ip
+                           | <IPvFuture>                                                    action => ip
 <IP literal>             ::= "[" <IP literal interior> "]"
 <ZoneID interior>        ::= <unreserved>  | <pct encoded>
-<ZoneID>                 ::= <ZoneID interior>+
+<ZoneID>                 ::= <ZoneID interior>+                                             action => zone
 <IPv6addrz>              ::= <IPv6address> "%25" <ZoneID>
 
-<IPvFuture>              ::= "v" <HEXDIG many> "." <IPvFuture trailer>
+<IPvFuture>              ::= "v" <HEXDIG many> "." <IPvFuture trailer>                      action => ipvx
 <IPvFuture trailer unit> ::= <unreserved> | <sub delims> | ":"
 <IPvFuture trailer>      ::= <IPvFuture trailer unit>+
 
-<IPv6address>            ::=                                   <6 h16 colon> <ls32>
-                           |                              "::" <5 h16 colon> <ls32>
-                           |                      <h16>   "::" <4 h16 colon> <ls32>
-                           |                              "::" <4 h16 colon> <ls32>
-                           |   <0 to 1 h16 colon> <h16>   "::" <3 h16 colon> <ls32>
-                           |                              "::" <3 h16 colon> <ls32>
-                           |   <0 to 2 h16 colon> <h16>   "::" <2 h16 colon> <ls32>
-                           |                              "::" <2 h16 colon> <ls32>
-                           |   <0 to 3 h16 colon> <h16>   "::" <1 h16 colon> <ls32>
-                           |                              "::" <1 h16 colon> <ls32>
-                           |   <0 to 4 h16 colon> <h16>   "::"               <ls32>
-                           |                              "::"               <ls32>
-                           |   <0 to 5 h16 colon> <h16>   "::"               <h16>
-                           |                              "::"               <h16>
-                           |   <0 to 6 h16 colon> <h16>   "::"
-                           |                              "::"
+<IPv6address>            ::=                                   <6 h16 colon> <ls32>         action => ipv6
+                           |                              "::" <5 h16 colon> <ls32>         action => ipv6
+                           |                      <h16>   "::" <4 h16 colon> <ls32>         action => ipv6
+                           |                              "::" <4 h16 colon> <ls32>         action => ipv6
+                           |   <0 to 1 h16 colon> <h16>   "::" <3 h16 colon> <ls32>         action => ipv6
+                           |                              "::" <3 h16 colon> <ls32>         action => ipv6
+                           |   <0 to 2 h16 colon> <h16>   "::" <2 h16 colon> <ls32>         action => ipv6
+                           |                              "::" <2 h16 colon> <ls32>         action => ipv6
+                           |   <0 to 3 h16 colon> <h16>   "::" <1 h16 colon> <ls32>         action => ipv6
+                           |                              "::" <1 h16 colon> <ls32>         action => ipv6
+                           |   <0 to 4 h16 colon> <h16>   "::"               <ls32>         action => ipv6
+                           |                              "::"               <ls32>         action => ipv6
+                           |   <0 to 5 h16 colon> <h16>   "::"               <h16>          action => ipv6
+                           |                              "::"               <h16>          action => ipv6
+                           |   <0 to 6 h16 colon> <h16>   "::"                              action => ipv6
+                           |                              "::"                              action => ipv6
 
 <1 h16 colon>            ::= <h16> ":"
 <2 h16 colon>            ::= <h16> ":" <h16> ":"
@@ -325,7 +347,7 @@ __DATA__
                            | <HEXDIG> <HEXDIG> <HEXDIG> <HEXDIG>
 
 <ls32>                   ::= <h16> ":" <h16> | <IPv4address>
-<IPv4address>            ::= <dec octet> "." <dec octet> "." <dec octet> "." <dec octet>
+<IPv4address>            ::= <dec octet> "." <dec octet> "." <dec octet> "." <dec octet> action => ipv4
 
 <dec octet>              ::= <DIGIT>                     # 0-9
                            | [\x{31}-\x{39}] <DIGIT>     # 10-99
