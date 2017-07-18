@@ -20,11 +20,11 @@ sub new {
   #
   if ($uri =~ /^[A-Za-z][A-Za-z0-9+\-.]*/p) {
     return
-      # eval {
-        load_class("MarpaX::ESLIF::URI::${^MATCH}")->new($uri)
-      # }
-      //
-      MarpaX::ESLIF::URI::_generic->new($uri)
+        eval {
+            load_class("MarpaX::ESLIF::URI::${^MATCH}")->new($uri)
+        }
+        //
+        MarpaX::ESLIF::URI::_generic->new($uri)
   } else {
     return MarpaX::ESLIF::URI::_generic->new($uri)
   }

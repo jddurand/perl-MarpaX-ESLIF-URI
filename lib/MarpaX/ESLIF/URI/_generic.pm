@@ -227,7 +227,7 @@ This package is L<Log::Any> aware, and will use the later in case parsing fails 
 
 =head1 SEE ALSO
 
-L<, L<MarpaX::ESLIF::URI>, L<RFC3986|https://tools.ietf.org/html/rfc3986>, L<RFC6874|https://tools.ietf.org/html/rfc6874>
+L<MarpaX::ESLIF::URI>, L<RFC3986|https://tools.ietf.org/html/rfc3986>, L<RFC6874|https://tools.ietf.org/html/rfc6874>
 
 =cut
 
