@@ -56,7 +56,7 @@ sub BUILDARGS {
 
 =head2 $class->bnf
 
-Returns the grammar used to parse a URI using the generic syntax.
+Returns the BNF used to parse the input.
 
 =cut
 
@@ -80,7 +80,7 @@ sub eslif {
 
 =head2 $class->grammar
 
-Returns a MarpaX::ESLIF::Grammar singleton.
+Returns the compiled BNF used to parse the input as MarpaX::ESLIF::Grammar singleton.
 
 =cut
 

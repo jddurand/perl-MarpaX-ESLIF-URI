@@ -19,9 +19,13 @@ my $BNF = do { local $/; <DATA> };
 #
 my $GRAMMAR = MarpaX::ESLIF::Grammar->new(MarpaX::ESLIF::URI::_generic->eslif, __PACKAGE__->bnf);
 
+=head1 SUBROUTINES/METHODS
+
+MarpaX::ESLIF::URI::file inherits, and eventually overwrites some, methods or MarpaX::ESLIF::URI::_generic.
+
 =head2 $class->bnf
 
-Returns the grammar used to parse a URI using the generic syntax.
+Overwrites parent's bnf implementation. Returns the BNF used to parse the input.
 
 =cut
 
@@ -33,7 +37,7 @@ sub bnf {
 
 =head2 $class->grammar
 
-Returns a MarpaX::ESLIF::Grammar singleton.
+Overwrite parent's grammar implementation. Returns the compiled BNF used to parse the input as MarpaX::ESLIF::Grammar singleton.
 
 =cut
 
@@ -42,6 +46,14 @@ sub grammar {
 
   return $GRAMMAR;
 }
+
+#
+# Class::Tiny generated methods
+#
+
+=head2 $self->drive
+
+Returns the drive letter, or undef.
 
 =head1 SEE ALSO
 
