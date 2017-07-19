@@ -31,9 +31,9 @@ our $BNF = do { local $/; <DATA> };
 #
 my $ESLIF = MarpaX::ESLIF->new($log);
 #
-# Grammar singleton, built using class methods
+# Grammar singleton
 #
-my $GRAMMAR;
+my $GRAMMAR = MarpaX::ESLIF::Grammar->new($ESLIF, $BNF);
 
 =head1 SUBROUTINES/METHODS
 
@@ -235,14 +235,14 @@ foreach my $method (Class::Tiny->get_all_attributes_for(__PACKAGE__)) {
 sub _grammar {
   my ($class) = @_;
 
-  return $GRAMMAR //= MarpaX::ESLIF::Grammar->new($ESLIF, $class->bnf)
+  return $GRAMMAR;
 }
 
 sub _parse {
     my ($class, $uri) = @_;
 
     my $recognizerInterface = MarpaX::ESLIF::URI::_generic::RecognizerInterface->new($uri);
-    my $valueInterface = MarpaX::ESLIF::URI::_generic::ValueInterface->new();
+    my $valueInterface = MarpaX::ESLIF::URI::_generic::ValueInterface->new(Class::Tiny->get_all_attribute_defaults_for($class));
 
     $class->_grammar->parse($recognizerInterface, $valueInterface) || croak 'Parse failure';
     return $valueInterface->getResult || croak 'Parse value failure'

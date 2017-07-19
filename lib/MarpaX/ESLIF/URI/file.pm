@@ -14,12 +14,22 @@ use Class::Tiny qw/drive/;
 use Class::Method::Modifiers qw/around/;
 
 my $BNF = do { local $/; <DATA> };
+#
+# Grammar singleton
+#
+my $GRAMMAR = MarpaX::ESLIF::Grammar->new($ESLIF, join("\n", $BNF, MarpaX::ESLIF::URI::_generic->bnf));
 
-around bnf => sub {
-  my ($orig, $class) = @_;
+=head2 $class->bnf
 
-  return join("\n", $BNF, $class->$orig)
-};
+Returns the grammar used to parse a URI using the generic syntax.
+
+=cut
+
+sub bnf {
+  my ($class) = @_;
+
+  return $BNF
+}
 
 =head1 SEE ALSO
 
@@ -33,9 +43,9 @@ __DATA__
 #
 # Reference: https://tools.ietf.org/html/rfc8089#section-2
 #
-<file URI>       ::= <file scheme> ":" <file hier part>
+<file URI>       ::= <file scheme> ":" <file hier part>            action => string
 
-<file scheme>    ::= "file"                                        action => scheme
+<file scheme>    ::= "file":i                                      action => scheme
 
 <file hier part> ::= "//" <auth path>
                    | <local path>

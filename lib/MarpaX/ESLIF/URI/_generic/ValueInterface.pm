@@ -6,8 +6,17 @@ use vars qw/$AUTOLOAD/;
 use Class::Method::Modifiers qw/fresh/;
 
 sub new {
-  my ($class) = @_;
-  bless {}, $class          # C.f. AUTOLOAD
+    my ($class, $attribute_defaults) = @_;               # %attribute_defaults is optional
+
+    $attribute_defaults = {} unless ref($attribute_defaults) eq 'HASH';
+
+    bless
+    {
+        map {
+            my $value = $attribute_defaults->{$_};
+            $_ => ref($value) eq 'CODE' ? $value->() : $value
+        } keys %{$attribute_defaults}
+    }, $class
 }
 
 #

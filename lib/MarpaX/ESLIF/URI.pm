@@ -19,14 +19,10 @@ sub new {
   # scheme is always a well define, ASCII only, thingy at the very beginning:
   #
   if ($uri =~ /^[A-Za-z][A-Za-z0-9+\-.]*/p) {
-    return
-        eval {
-            load_class("MarpaX::ESLIF::URI::${^MATCH}")->new($uri)
-        }
-        //
-        MarpaX::ESLIF::URI::_generic->new($uri)
+      my $lc_scheme = lc(${^MATCH});
+      eval { load_class("MarpaX::ESLIF::URI::$lc_scheme")->new($uri) } // MarpaX::ESLIF::URI::_generic->new($uri)
   } else {
-    return MarpaX::ESLIF::URI::_generic->new($uri)
+      MarpaX::ESLIF::URI::_generic->new($uri)
   }
 }
 
