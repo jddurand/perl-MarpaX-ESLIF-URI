@@ -17,7 +17,7 @@ my $BNF = do { local $/; <DATA> };
 #
 # Grammar singleton
 #
-my $GRAMMAR = MarpaX::ESLIF::Grammar->new($ESLIF, join("\n", $BNF, MarpaX::ESLIF::URI::_generic->bnf));
+my $GRAMMAR = MarpaX::ESLIF::Grammar->new(MarpaX::ESLIF::URI::_generic->eslif, __PACKAGE__->bnf);
 
 =head2 $class->bnf
 
@@ -28,7 +28,19 @@ Returns the grammar used to parse a URI using the generic syntax.
 sub bnf {
   my ($class) = @_;
 
-  return $BNF
+  join("\n", $BNF, MarpaX::ESLIF::URI::_generic->bnf)
+};
+
+=head2 $class->grammar
+
+Returns a MarpaX::ESLIF::Grammar singleton.
+
+=cut
+
+sub grammar {
+  my ($class) = @_;
+
+  return $GRAMMAR;
 }
 
 =head1 SEE ALSO

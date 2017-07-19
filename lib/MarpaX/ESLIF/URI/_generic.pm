@@ -33,7 +33,7 @@ my $ESLIF = MarpaX::ESLIF->new($log);
 #
 # Grammar singleton
 #
-my $GRAMMAR = MarpaX::ESLIF::Grammar->new($ESLIF, $BNF);
+my $GRAMMAR = MarpaX::ESLIF::Grammar->new(__PACKAGE__->eslif, __PACKAGE__->bnf);
 
 =head1 SUBROUTINES/METHODS
 
@@ -64,6 +64,30 @@ sub bnf {
   my ($class) = @_;
 
   return $BNF
+}
+
+=head2 $class->eslif
+
+Returns a MarpaX::ESLIF singleton.
+
+=cut
+
+sub eslif {
+  my ($class) = @_;
+
+  return $ESLIF
+}
+
+=head2 $class->grammar
+
+Returns a MarpaX::ESLIF::Grammar singleton.
+
+=cut
+
+sub grammar {
+  my ($class) = @_;
+
+  return $GRAMMAR;
 }
 
 #
@@ -232,19 +256,13 @@ foreach my $method (Class::Tiny->get_all_attributes_for(__PACKAGE__)) {
 # Internals
 #
 
-sub _grammar {
-  my ($class) = @_;
-
-  return $GRAMMAR;
-}
-
 sub _parse {
     my ($class, $uri) = @_;
 
     my $recognizerInterface = MarpaX::ESLIF::URI::_generic::RecognizerInterface->new($uri);
     my $valueInterface = MarpaX::ESLIF::URI::_generic::ValueInterface->new(Class::Tiny->get_all_attribute_defaults_for($class));
 
-    $class->_grammar->parse($recognizerInterface, $valueInterface) || croak 'Parse failure';
+    $class->grammar->parse($recognizerInterface, $valueInterface) || croak 'Parse failure';
     return $valueInterface->getResult || croak 'Parse value failure'
 }
 
