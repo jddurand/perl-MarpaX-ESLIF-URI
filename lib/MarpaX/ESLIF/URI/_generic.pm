@@ -10,29 +10,41 @@ package MarpaX::ESLIF::URI::_generic;
 # VERSION
 
 use Carp qw/croak/;
-use Class::Method::Modifiers qw/around/;
-use Class::Tiny qw/string scheme authority userinfo host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque/,
-  {
-   path     => sub { { origin => '', decode => '' } },
-   segments => sub { { origin => [], decode => [] } }
-   };
+use Class::Method::Modifiers qw/fresh/;
+use Class::Tiny::Antlers;
 use Log::Any qw/$log/;
 use MarpaX::ESLIF;
 use MarpaX::ESLIF::URI::_generic::RecognizerInterface;
 use MarpaX::ESLIF::URI::_generic::ValueInterface;
 use overload '""' => 'as_string', fallback => 1;
 
+has '_string'    => ( is => 'rw' );
+has '_scheme'    => ( is => 'rw' );
+has '_authority' => ( is => 'rw' );
+has '_userinfo'  => ( is => 'rw' );
+has '_host'      => ( is => 'rw' );
+has '_ip'        => ( is => 'rw' );
+has '_ipv4'      => ( is => 'rw' );
+has '_ipv6'      => ( is => 'rw' );
+has '_ipvx'      => ( is => 'rw' );
+has '_zone'      => ( is => 'rw' );
+has '_port'      => ( is => 'rw' );
+has '_path'      => ( is => 'rw', default => sub { { origin => '', decode => '' } }); # Default is empty path ./..
+has '_segments'  => ( is => 'rw', default => sub { { origin => [], decode => [] } });  # ../. i.e. no component
+has '_query'     => ( is => 'rw' );
+has '_fragment'  => ( is => 'rw' );
+has '_opaque'    => ( is => 'rw' );
+
 #
-# Constant
+# All attributes starting with an underscore are the result of parsing
 #
-our $BNF = do { local $/; <DATA> };
+__PACKAGE__->_generate_actions(qw/_string _scheme _authority _userinfo _host _ip _ipv4 _ipv6 _ipvx _zone _port _path _segments _query _fragment _opaque/);
+
 #
-# ESLIF singleton
+# Constants
 #
+my $BNF = do { local $/; <DATA> };
 my $ESLIF = MarpaX::ESLIF->new($log);
-#
-# Grammar singleton
-#
 my $GRAMMAR = MarpaX::ESLIF::Grammar->new(__PACKAGE__->eslif, __PACKAGE__->bnf);
 
 =head1 SUBROUTINES/METHODS
@@ -47,11 +59,17 @@ sub BUILDARGS {
   my ($class, @args) = @_;
 
   if ($#args == 0) {
-    return $class->_parse($args[0])
+    return { _string => $args[0] }
   } else {
-    croak "Usage: $class->new(\$uri)" unless $MarpaX::ESLIF::URI::_generic::CLONE;
     return {@args}
   }
+}
+
+sub BUILD {
+  my ($self) = @_;
+
+  my $_string = $self->_string;
+  $self->_parse($_string) unless ref($_string)
 }
 
 =head2 $class->bnf
@@ -173,7 +191,8 @@ Returns an exact clone of current instance.
 sub clone {
   my ($self) = @_;
 
-  return $self->_clone
+  my $class = ref($self);
+  return $class->new(map { $_ => $self->$_ } Class::Tiny->get_all_attributes_for($class))
 }
 
 =head2 $self->has_recognized_scheme
@@ -185,7 +204,7 @@ Returns a true value if the scheme is recognized.
 sub has_recognized_scheme {
   my ($self) = @_;
 
-  return defined($self->scheme)
+  return defined($self->_scheme)
 }
 
 =head2 $self->as_string
@@ -197,7 +216,7 @@ Returns the unescaped string of the URI, which is always a valid Perl-extended U
 sub as_string {
   my ($self) = @_;
 
-  return $self->string->{decode}
+  return $self->_string->{decode}
 }
 
 =head2 $self->is_abs
@@ -209,7 +228,7 @@ Returns a true value if the parsed URI is absolute, a false value otherwise.
 sub is_abs {
   my ($self) = @_;
 
-  return defined($self->scheme)
+  return defined($self->_scheme)
 }
 
 =head2 $self->base
@@ -227,20 +246,12 @@ sub base {
     #
     # We need the scheme
     #
-    croak "Cannot derive a base URI without a scheme" unless defined $self->scheme;
-    return $self->_clone(fragment => undef)
-  }
-}
-
-#
-# Method modifiers: explicitely state the read-only mode on all methods
-#
-foreach my $method (Class::Tiny->get_all_attributes_for(__PACKAGE__)) {
-  around $method => sub {
-    my ($orig, $self, @args) = @_;
-    my $class = ref($self);
-    croak "$class::$method is read-only" if @args;
-    return $self->$orig
+    croak "Cannot derive a base URI without a scheme" unless defined $self->_scheme;
+    my $_string = $self->_string->{origin};
+    my $_fragment = $self->_fragment->{origin};
+    my $quote__fragment = quotemeta($_fragment);
+    $_string =~ s/$quote__fragment$//;
+    return ref($self)->new($_string)
   }
 }
 
@@ -248,28 +259,78 @@ foreach my $method (Class::Tiny->get_all_attributes_for(__PACKAGE__)) {
 # Internals
 #
 
-sub _parse {
-    my ($class, $uri) = @_;
-
-    my $recognizerInterface = MarpaX::ESLIF::URI::_generic::RecognizerInterface->new($uri);
-    my $valueInterface = MarpaX::ESLIF::URI::_generic::ValueInterface->new(Class::Tiny->get_all_attribute_defaults_for($class));
-
-    $class->grammar->parse($recognizerInterface, $valueInterface) || croak 'Parse failure';
-    return $valueInterface->getResult || croak 'Parse value failure'
+sub _generate_actions {
+  my ($class, @attributes) = @_;
+  #
+  # All the attributes have an associate explicit action called _action_$aattribute
+  #
+  foreach my $attribute (@attributes) {
+    my $method = "_action$attribute";
+    next if $class->can($method);
+    my $stub = eval "sub {
+      my (\$self, \@args) = \@_;
+      \$self->$attribute(\$self->__concat(\@args))
+    }" || croak "Failed to create action stub for attribute $attribute, $@";
+    fresh $method => $stub;
+  }
 }
 
-sub _clone {
-  my ($self, %forced) = @_;
+sub _parse {
+    my ($self, $string) = @_;
 
-  local $MarpaX::ESLIF::URI::_generic::CLONE = 1;
-  my $class = ref($self);
-  return $class->new(
-                     (
-                      map {
-                        $_ => exists($forced{$_}) ? $forced{$_} : $self->$_
-                      } Class::Tiny->get_all_attributes_for($class)
-                     )
-                    )
+    if (defined($string) && length($string)) {
+      my $recognizerInterface = MarpaX::ESLIF::URI::_generic::RecognizerInterface->new($string);
+      my $valueInterface = MarpaX::ESLIF::URI::_generic::ValueInterface->new($self);
+
+      $self->grammar->parse($recognizerInterface, $valueInterface) || croak 'Parse failure'
+    }
+}
+
+#
+# This _pct_encoded method guarantees that the output is a sequence of ASCII characters
+# even if the UTF-8 flag would be set. For instance sequence %ce%a3 will be
+# seen as "\x{ce}\x{a3}" in the resulting string, and NOT "\x{cea3}".
+#
+sub __pct_encoded {
+    my ($self, undef, $hex1, $hex2) = @_;
+
+    return { origin => join('', '%', $hex1->{origin}, $hex2->{origin}), decode => chr(hex(join('', $hex1->{decode}, $hex2->{decode}))) }
+}
+#
+# Pushes segments in a _segment[] array
+#
+sub __segment {
+    my ($self, @args) = @_;
+
+    my $concat = $self->__concat(@args);
+    push(@{$self->_segments->{origin}}, $concat->{origin});
+    push(@{$self->_segments->{decode}}, $concat->{decode});
+    return $concat
+}
+#
+# Exactly the same as ESLIF's ::concat built-in, but revisited
+# to work on original and decoded strings at the same time
+#
+sub __concat {
+    my ($self, @args) = @_;
+
+    return undef unless @args;
+
+    my %rc = ( origin => '', decode => '' );
+    foreach my $arg (@args) {
+        next unless ref($arg);
+        $rc{origin} .= $arg->{origin} // '';
+        $rc{decode} .= $arg->{decode} // '';
+      }
+    return \%rc
+}
+#
+# Exactly the same as ESLIF's ::transfer built-in, but revisited
+# to work on original and decoded strings at the same time
+#
+sub __symbol {
+    my ($self, $symbol) = @_;
+    return { origin => $symbol, decode => $symbol }
 }
 
 =head1 NOTES
@@ -289,17 +350,17 @@ __DATA__
 # We maintain two string version in parallel when valuating the parse tree:
 # - original
 # - decoded
-:default ::= action        => _concat
-             symbol-action => _symbol
+:default ::= action        => __concat
+             symbol-action => __symbol
 
 # :start ::= <URI reference>
-<URI reference>          ::= <URI>                                                          action => string
-                           | <relative ref>                                                 action => string
+<URI reference>          ::= <URI>                                                          action => _action_string
+                           | <relative ref>                                                 action => _action_string
 #
 # Reference: https://tools.ietf.org/html/rfc3986#appendix-A
 # Reference: https://tools.ietf.org/html/rfc6874
 #
-<URI opaque>             ::= <hier part> <URI query>                                        action => opaque
+<URI opaque>             ::= <hier part> <URI query>                                        action => _action_opaque
 <URI>                    ::= <scheme> ":" <URI opaque> <URI fragment>
 <URI query>              ::= "?" <query>
 <URI query>              ::=
@@ -314,7 +375,7 @@ __DATA__
 
 <absolute URI>           ::= <scheme> ":" <hier part> <URI query>
 
-<relative ref opaque>    ::= <relative part> <URI query>                                    action => opaque
+<relative ref opaque>    ::= <relative part> <URI query>                                    action => _action_opaque
 <relative ref>           ::= <relative ref opaque> <URI fragment>
 
 <relative part>          ::= "//" <authority> <path abempty>
@@ -322,7 +383,7 @@ __DATA__
                            | <path noscheme>
                            | <path empty>
 
-<scheme>                 ::= <scheme value>                                                 action => scheme
+<scheme>                 ::= <scheme value>                                                 action => _action_scheme
 <scheme value>           ::= <ALPHA> <scheme trailer>
 <scheme trailer unit>    ::= <ALPHA> | <DIGIT> | "+" | "-" | "."
 <scheme trailer>         ::= <scheme trailer unit>*
@@ -331,10 +392,10 @@ __DATA__
 <authority userinfo>     ::=
 <authority port>         ::= ":" <port>
 <authority port>         ::=
-<authority>              ::= <authority value>                                              action => authority
+<authority>              ::= <authority value>                                              action => _action_authority
 <authority value>        ::= <authority userinfo> <host> <authority port>
 <userinfo unit>          ::= <unreserved> | <pct encoded> | <sub delims> | ":"
-<userinfo>               ::= <userinfo value>                                               action => userinfo
+<userinfo>               ::= <userinfo value>                                               action => _action_userinfo
 <userinfo value>         ::= <userinfo unit>*
 #
 # The syntax rule for host is ambiguous because it does not completely
@@ -343,40 +404,40 @@ __DATA__
 # If host matches the rule for IPv4address, then it should be
 # considered an IPv4 address literal and not a reg-name.
 #
-<host>                   ::= <IP literal>            rank =>  0                             action => host
-                           | <IPv4address>           rank => -1                             action => host
-                           | <reg name>              rank => -2                             action => host
-<port>                   ::= <port value>                                                   action => port
+<host>                   ::= <IP literal>            rank =>  0                             action => _action_host
+                           | <IPv4address>           rank => -1                             action => _action_host
+                           | <reg name>              rank => -2                             action => _action_host
+<port>                   ::= <port value>                                                   action => _action_port
 <port value>             ::= <DIGIT>*
 
-<IP literal interior>    ::= <IPv6address>                                                  action => ip
-                           | <IPv6addrz>                                                    action => ip
-                           | <IPvFuture>                                                    action => ip
+<IP literal interior>    ::= <IPv6address>                                                  action => _action_ip
+                           | <IPv6addrz>                                                    action => _action_ip
+                           | <IPvFuture>                                                    action => _action_ip
 <IP literal>             ::= "[" <IP literal interior> "]"
 <ZoneID interior>        ::= <unreserved>  | <pct encoded>
-<ZoneID>                 ::= <ZoneID interior>+                                             action => zone
+<ZoneID>                 ::= <ZoneID interior>+                                             action => _action_zone
 <IPv6addrz>              ::= <IPv6address> "%25" <ZoneID>
 
-<IPvFuture>              ::= "v" <HEXDIG many> "." <IPvFuture trailer>                      action => ipvx
+<IPvFuture>              ::= "v" <HEXDIG many> "." <IPvFuture trailer>                      action => _action_ipvx
 <IPvFuture trailer unit> ::= <unreserved> | <sub delims> | ":"
 <IPvFuture trailer>      ::= <IPvFuture trailer unit>+
 
-<IPv6address>            ::=                                   <6 h16 colon> <ls32>         action => ipv6
-                           |                              "::" <5 h16 colon> <ls32>         action => ipv6
-                           |                      <h16>   "::" <4 h16 colon> <ls32>         action => ipv6
-                           |                              "::" <4 h16 colon> <ls32>         action => ipv6
-                           |   <0 to 1 h16 colon> <h16>   "::" <3 h16 colon> <ls32>         action => ipv6
-                           |                              "::" <3 h16 colon> <ls32>         action => ipv6
-                           |   <0 to 2 h16 colon> <h16>   "::" <2 h16 colon> <ls32>         action => ipv6
-                           |                              "::" <2 h16 colon> <ls32>         action => ipv6
-                           |   <0 to 3 h16 colon> <h16>   "::" <1 h16 colon> <ls32>         action => ipv6
-                           |                              "::" <1 h16 colon> <ls32>         action => ipv6
-                           |   <0 to 4 h16 colon> <h16>   "::"               <ls32>         action => ipv6
-                           |                              "::"               <ls32>         action => ipv6
-                           |   <0 to 5 h16 colon> <h16>   "::"               <h16>          action => ipv6
-                           |                              "::"               <h16>          action => ipv6
-                           |   <0 to 6 h16 colon> <h16>   "::"                              action => ipv6
-                           |                              "::"                              action => ipv6
+<IPv6address>            ::=                                   <6 h16 colon> <ls32>         action => _action_ipv6
+                           |                              "::" <5 h16 colon> <ls32>         action => _action_ipv6
+                           |                      <h16>   "::" <4 h16 colon> <ls32>         action => _action_ipv6
+                           |                              "::" <4 h16 colon> <ls32>         action => _action_ipv6
+                           |   <0 to 1 h16 colon> <h16>   "::" <3 h16 colon> <ls32>         action => _action_ipv6
+                           |                              "::" <3 h16 colon> <ls32>         action => _action_ipv6
+                           |   <0 to 2 h16 colon> <h16>   "::" <2 h16 colon> <ls32>         action => _action_ipv6
+                           |                              "::" <2 h16 colon> <ls32>         action => _action_ipv6
+                           |   <0 to 3 h16 colon> <h16>   "::" <1 h16 colon> <ls32>         action => _action_ipv6
+                           |                              "::" <1 h16 colon> <ls32>         action => _action_ipv6
+                           |   <0 to 4 h16 colon> <h16>   "::"               <ls32>         action => _action_ipv6
+                           |                              "::"               <ls32>         action => _action_ipv6
+                           |   <0 to 5 h16 colon> <h16>   "::"               <h16>          action => _action_ipv6
+                           |                              "::"               <h16>          action => _action_ipv6
+                           |   <0 to 6 h16 colon> <h16>   "::"                              action => _action_ipv6
+                           |                              "::"                              action => _action_ipv6
 
 <1 h16 colon>            ::= <h16> ":"
 <2 h16 colon>            ::= <h16> ":" <h16> ":"
@@ -407,7 +468,7 @@ __DATA__
                            | <HEXDIG> <HEXDIG> <HEXDIG> <HEXDIG>
 
 <ls32>                   ::= <h16> ":" <h16> | <IPv4address>
-<IPv4address>            ::= <dec octet> "." <dec octet> "." <dec octet> "." <dec octet> action => ipv4
+<IPv4address>            ::= <dec octet> "." <dec octet> "." <dec octet> "." <dec octet> action => _action_ipv4
 
 <dec octet>              ::= <DIGIT>                     # 0-9
                            | [\x{31}-\x{39}] <DIGIT>     # 10-99
@@ -425,33 +486,33 @@ __DATA__
                            | <path empty>                                                   # zero characters
 
 <path abempty unit>      ::= "/" <segment>
-<path abempty>           ::= <path abempty value>                                           action => path
+<path abempty>           ::= <path abempty value>                                           action => _action_path
 <path abempty value>     ::= <path abempty unit>*
-<path absolute>          ::= <path absolute value>                                          action => path
+<path absolute>          ::= <path absolute value>                                          action => _action_path
 <path absolute value>    ::= "/"
                            | "/" <segment nz> <path abempty>
-<path noscheme>          ::= <path noscheme value>                                          action => path
+<path noscheme>          ::= <path noscheme value>                                          action => _action_path
 <path noscheme value>    ::= <segment nz nc> <path abempty>
-<path rootless>          ::= <path rootless value>                                          action => path
+<path rootless>          ::= <path rootless value>                                          action => _action_path
 <path rootless value>    ::= <segment nz> <path abempty>
 <path empty>             ::=                                                                # Default value for path is ''
 
-<segment>                ::= <pchar>*                                                       action => _segment
-<segment nz>             ::= <pchar>+                                                       action => _segment
+<segment>                ::= <pchar>*                                                       action => __segment
+<segment nz>             ::= <pchar>+                                                       action => __segment
 <segment nz nc unit>     ::= <unreserved> | <pct encoded> | <sub delims> | "@" # non-zero-length segment without any colon ":"
-<segment nz nc>          ::= <segment nz nc unit>+                                          action => _segment
+<segment nz nc>          ::= <segment nz nc unit>+                                          action => __segment
 
 <pchar>                  ::= <unreserved> | <pct encoded> | <sub delims> | ":" | "@"
 
 <query unit>             ::= <pchar> | "/" | "?"
-<query>                  ::= <query value>                                                  action => query
+<query>                  ::= <query value>                                                  action => _action_query
 <query value>            ::= <query unit>*
 
 <fragment unit>          ::= <pchar> | "/" | "?"
-<fragment>               ::= <fragment value>                                               action => fragment
+<fragment>               ::= <fragment value>                                               action => _action_fragment
 <fragment value>         ::= <fragment unit>*
 
-<pct encoded>            ::= "%" <HEXDIG> <HEXDIG>                                          action => _pct_encoded
+<pct encoded>            ::= "%" <HEXDIG> <HEXDIG>                                          action => __pct_encoded
 
 <unreserved>             ::= <ALPHA> | <DIGIT> | "-" | "." | "_" | "~"
 <reserved>               ::= <gen delims> | <sub delims>

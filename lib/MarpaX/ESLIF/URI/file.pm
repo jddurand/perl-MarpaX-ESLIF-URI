@@ -9,15 +9,23 @@ package MarpaX::ESLIF::URI::file;
 
 # VERSION
 
-use parent 'MarpaX::ESLIF::URI::_generic';
-use Class::Tiny qw/drive/;
-use Class::Method::Modifiers qw/around/;
+use Class::Tiny::Antlers;
+use MarpaX::ESLIF;
 
+extends 'MarpaX::ESLIF::URI::_generic';
+
+has '_drive' => (is => 'rw' );
+
+#
+# Inherited method
+#
+__PACKAGE__->_generate_actions(qw/_drive/);
+
+#
+# Constants
+#
 my $BNF = do { local $/; <DATA> };
-#
-# Grammar singleton
-#
-my $GRAMMAR = MarpaX::ESLIF::Grammar->new(MarpaX::ESLIF::URI::_generic->eslif, __PACKAGE__->bnf);
+my $GRAMMAR = MarpaX::ESLIF::Grammar->new(__PACKAGE__->eslif, __PACKAGE__->bnf);
 
 =head1 SUBROUTINES/METHODS
 
@@ -67,9 +75,9 @@ __DATA__
 #
 # Reference: https://tools.ietf.org/html/rfc8089#section-2
 #
-<file URI>       ::= <file scheme> ":" <file hier part>            action => string
+<file URI>       ::= <file scheme> ":" <file hier part>            action => _action_string
 
-<file scheme>    ::= "file":i                                      action => scheme
+<file scheme>    ::= "file":i                                      action => _action_scheme
 
 <file hier part> ::= "//" <auth path>
                    | <local path>
@@ -87,27 +95,27 @@ __DATA__
                    |                <path absolute>
                    |                <file absolute>
 
-<unc authority>  ::= "//" <file host>                              action => authority
-                   | "///" <file host>                             action => authority
+<unc authority>  ::= "//" <file host>                              action => _action_authority
+                   | "///" <file host>                             action => _action_authority
 
-<file host>      ::= <inline IP>                                   action => host
-                   | IPv4address                                   action => host
-                   | <reg name>                                    action => host
+<file host>      ::= <inline IP>                                   action => _action_host
+                   | IPv4address                                   action => _action_host
+                   | <reg name>                                    action => _action_host
 
 <inline IP>      ::= "%5B" <IPv6address> "%5D"
                    | "%5B" <IPvFuture> "%5D"
 
 <file absolute>  ::= "/" <drive letter> <path absolute>
 
-<drive>          ::= ALPHA                                         action => drive
+<drive>          ::= ALPHA                                         action => _action_drive
 
 <drive letter>   ::= <drive> ":"
                    | <drive> "|"
 
-<file auth>      ::= <userinfo> "@" <host>                         action => authority
-                   |                <host>                         action => authority
+<file auth>      ::= <userinfo> "@" <host>                         action => _action_authority
+                   |                <host>                         action => _action_authority
 
-<host>           ::= "localhost"                                   action => host
+<host>           ::= "localhost"                                   action => _action_host
 #
 # Generic syntax will be appended here
 #
