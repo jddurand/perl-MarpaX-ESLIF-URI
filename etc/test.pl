@@ -8,6 +8,7 @@ use Log::Any::Adapter;
 use Log::Any qw/$log/;
 use MarpaX::ESLIF::URI;
 use Data::Scan::Printer;
+use Devel::Peek;
 
 autoflush STDOUT 1;
 autoflush STDERR 1;
@@ -34,6 +35,7 @@ while (@ARGV) {
       dspp($uri);
       print "\n";
       print "Stringification: $uri\n";
+      Dump("$uri");
   };
   print "$@" if $@;
 

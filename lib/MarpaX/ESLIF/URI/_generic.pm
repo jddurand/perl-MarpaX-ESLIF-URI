@@ -13,8 +13,8 @@ use Carp qw/croak/;
 use Class::Method::Modifiers qw/around/;
 use Class::Tiny qw/string absolute relative scheme authority userinfo host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque/,
   {
-   path => '',
-   segments => sub { [] }
+   path     => sub { { origin => '', decode => '' } },
+   segments => sub { { origin => [], decode => [] } }
    };
 use Log::Any qw/$log/;
 use MarpaX::ESLIF;
@@ -205,7 +205,7 @@ Returns the unescaped string of the URI, which is always a valid Perl-extended U
 sub as_string {
   my ($self) = @_;
 
-  return $self->string
+  return $self->string->{decode}
 }
 
 =head2 $self->is_abs
@@ -293,6 +293,13 @@ L<MarpaX::ESLIF::URI>, L<RFC3986|https://tools.ietf.org/html/rfc3986>, L<RFC6874
 1;
 
 __DATA__
+#
+# We maintain two string version in parallel when valuating the parse tree:
+# - original
+# - decoded
+:default ::= action        => _concat
+             symbol-action => _symbol
+
 # :start ::= <URI reference>
 <URI reference>          ::= <URI>                                                          action => string
                            | <relative ref>                                                 action => string

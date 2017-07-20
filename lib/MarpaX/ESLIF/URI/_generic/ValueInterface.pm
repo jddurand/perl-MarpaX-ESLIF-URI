@@ -19,9 +19,9 @@ sub new {
     }, $class
 }
 
-#
+# --------------------------------
 # Value Interface required methods
-#
+# --------------------------------
 sub isWithHighRankOnly {     1 } # When there is the rank adverb: highest ranks only ?
 sub isWithOrderByRank  {     1 } # When there is the rank adverb: order by rank ?
 sub isWithAmbiguous    {     0 } # Allow ambiguous parse ?
@@ -30,29 +30,60 @@ sub maxParses          {     0 } # Maximum number of parse tree values - meaning
 sub setResult          {       } # No-op here
 sub getResult          { $_[0] } # Result
 
+# ----------------------
+# Specific value methods
+# ----------------------
 #
-# Grammar specific actions
+# This _pct_encoded method guarantees that the output is a sequence of ASCII characters
+# even if the UTF-8 flag would be set. For instance sequence %ce%a3 will be
+# seen as "\x{ce}\x{a3}" in the resulting string, and NOT "\x{cea3}".
+#
+sub _pct_encoded {
+    my ($self, undef, $hex1, $hex2) = @_;
+
+    { origin => join('', '%', $hex1->{origin}, $hex2->{origin}), decode => chr(hex(join('', $hex1->{decode}, $hex2->{decode}))) }
+}
+#
+# Pushes segments in a _segment[] array
 #
 sub _segment {
     my ($self, @args) = @_;
 
-    my $rc = join('', map { $_ // '' } @args);
-    push(@{$self->{segments}}, $rc);
-    $rc
+    my $concat = $self->_concat(@args);
+    push(@{$self->{segments}->{origin}}, $concat->{origin});
+    push(@{$self->{segments}->{decode}}, $concat->{decode});
+    $concat
+}
+#
+# Exactly the same as ESLIF's ::concat built-in, but revisited
+# to work on original and decoded strings at the same time
+#
+sub _concat {
+    my ($self, @args) = @_;
+
+    return undef unless @args;
+
+    my %rc = ( origin => '', decode => '' );
+    foreach my $arg (@args) {
+        next unless ref($arg);
+        $rc{origin} .= $arg->{origin} // '';
+        $rc{decode} .= $arg->{decode} // '';
+    }
+    \%rc
+}
+#
+# Exactly the same as ESLIF's ::transfer built-in, but revisited
+# to work on original and decoded strings at the same time
+#
+sub _symbol {
+    my ($self, $symbol) = @_;
+    { origin => $symbol, decode => $symbol }
 }
 
-# Specific value methods. Default is to NOT decode.
-sub _pct_encoded {
-    my ($self, $pctcharacter, $hex1, $hex2) = @_;
-
-    chr(hex("$hex1$hex2"))
-}
-
-sub _field {
-    my ($self, $what, @args) = @_;
-    $self->{$what} = join('', map { $_ // '' } @args)
-}
-
+#
+# Just to avoid automatic generation of DESTROY() method by
+# the AUTOLOAD just after -;
+#
 sub DESTROY {}
 #
 # Any other method is added on-the-fly
@@ -63,7 +94,7 @@ sub AUTOLOAD {
 
   fresh $field => sub {
       my ($self, @args) = @_;
-      $self->{$field} = join('', map { $_ // '' } @args)
+      $self->{$field} = $self->_concat(@args)
   };
   goto &$field
 }
