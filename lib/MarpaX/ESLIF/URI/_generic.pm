@@ -11,7 +11,7 @@ package MarpaX::ESLIF::URI::_generic;
 
 use Carp qw/croak/;
 use Class::Method::Modifiers qw/around/;
-use Class::Tiny qw/string absolute relative scheme authority userinfo host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque/,
+use Class::Tiny qw/string scheme authority userinfo host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque/,
   {
    path     => sub { { origin => '', decode => '' } },
    segments => sub { { origin => [], decode => [] } }
@@ -97,14 +97,6 @@ sub grammar {
 =head2 $self->string
 
 Returns the unescaped string version of the URI.
-
-=head2 $self->URI
-
-Returns the unescaped string version of the URI, when this is an absolute URI.
-
-=head2 $self->relative
-
-Returns the unescaped string version of the URI, when this is a relative URI.
 
 =head2 $self->scheme
 
@@ -217,7 +209,7 @@ Returns a true value if the parsed URI is absolute, a false value otherwise.
 sub is_abs {
   my ($self) = @_;
 
-  return defined($self->absolute)
+  return defined($self->scheme)
 }
 
 =head2 $self->base
@@ -308,7 +300,7 @@ __DATA__
 # Reference: https://tools.ietf.org/html/rfc6874
 #
 <URI opaque>             ::= <hier part> <URI query>                                        action => opaque
-<URI>                    ::= <scheme> ":" <URI opaque> <URI fragment>                       action => absolute
+<URI>                    ::= <scheme> ":" <URI opaque> <URI fragment>
 <URI query>              ::= "?" <query>
 <URI query>              ::=
 <URI fragment>           ::= "#" <fragment>
@@ -323,7 +315,7 @@ __DATA__
 <absolute URI>           ::= <scheme> ":" <hier part> <URI query>
 
 <relative ref opaque>    ::= <relative part> <URI query>                                    action => opaque
-<relative ref>           ::= <relative ref opaque> <URI fragment>                           action => relative
+<relative ref>           ::= <relative ref opaque> <URI fragment>
 
 <relative part>          ::= "//" <authority> <path abempty>
                            | <path absolute>
