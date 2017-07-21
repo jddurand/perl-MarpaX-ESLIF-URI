@@ -28,33 +28,44 @@ Log::Any::Adapter->set('Log4perl');
 
 local %Data::Scan::Printer::Option = (with_ansicolor => 0);
 
+my $format  = '%-25s : %s';
+my @methods = qw/string scheme authority host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque has_recognized_scheme as_string is_abs/;
+
 while (@ARGV) {
   print "From argument...:\n";
   my $uri;
   eval {
       $uri = MarpaX::ESLIF::URI->new(shift @ARGV);
-      dspp($uri);
-      print "\n";
-      print "Stringification: $uri\n";
-      Dump("$uri");
+      # dspp($uri); print "\n";
+      $log->infof($format, 'Type', ref($uri));
+      $log->infof($format, 'Stringification', "$uri");
+      foreach (@methods) {
+          $log->infof($format, $_, $uri->$_);
+      }
   };
   print "$@" if $@;
 
   print "\nFrom clone...:\n";
   eval {
     my $clone = $uri->clone;
-    dspp($clone);
-    print "\n";
-    print "Stringification: $clone\n";
+    # dspp($clone); print "\n";
+    $log->infof($format, 'Type', ref($clone));
+    $log->infof($format, 'Stringification', "$clone");
+    foreach (@methods) {
+        $log->infof($format, $_, $clone->$_);
+    }
   };
   print "$@" if $@;
 
   print "\nFrom base...:\n";
   eval {
     my $base = $uri->base;
-    dspp($base);
-    print "\n";
-    print "Stringification: $base\n";
+    # dspp($base); print "\n";
+    $log->infof($format, 'Type', ref($base));
+    $log->infof($format, 'Stringification', "$base");
+    foreach (@methods) {
+        $log->infof($format, $_, $base->$_);
+    }
   };
   print "$@" if $@;
 

@@ -120,81 +120,211 @@ sub grammar {
 # Class::Tiny generated methods
 #
 
-=head2 $self->string
+=head2 $self->string($type)
 
-Returns the unescaped string version of the URI.
+Returns the string version of the URI, C<$type> is either 'decoded' (default value) or 'origin'.
 
 =cut
     
 sub string {
     my ($self, $type) = @_;
 
-    $type //= 'decode';
-    my $_string = $self->_string;
-
-    return unless defined($_string);
-    return $_string->{$type}
+    return $self->_generic_getter('_string', $type)
 }
 
 =head2 $self->scheme
 
 Returns the scheme, or undef.
 
-=head2 $self->authority
+=cut
+    
+sub scheme {
+    my ($self) = @_;
+    #
+    # scheme never have a percent encoded character
+    #
+    return $self->_generic_getter('_scheme')
+}
 
-Returns the decoded authority, or undef.
+=head2 $self->authority($type)
 
-=head2 $self->userinfo
+Returns the authority, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
 
-Returns the decoded userinfo, or undef.
+=cut
+    
+sub authority {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_authority', $type)
+}
+
+=head2 $self->userinfo($type)
+
+Returns the userinfo, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+
+=cut
+    
+sub userinfo {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_userinfo', $type)
+}
 
 =head2 $self->host
 
-Returns the decoded host (which may contain C<[]> delimiters in case of Ipv6 literal), or undef.
+Returns the host (which may contain C<[]> delimiters in case of Ipv6 literal), or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+
+=cut
+    
+sub host {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_host', $type)
+}
 
 =head2 $self->ip
 
-Returns the decoded ip when host is an IP literal, or undef.
+Returns the IP when host is such a literal, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+
+=cut
+    
+sub ip {
+    my ($self) = @_;
+    #
+    # ip never have a percent encoded character
+    #
+    return $self->_generic_getter('_ip')
+}
 
 =head2 $self->ipv4
 
-Returns the decoded IPv4 when host is an IP of such type, or undef.
+Returns the IPv4 when host is such a literal, or undef.
+
+=cut
+    
+sub ipv4 {
+    my ($self) = @_;
+    #
+    # ipv4 never have a percent encoded character
+    #
+    return $self->_generic_getter('_ipv4')
+}
 
 =head2 $self->ipv6
 
-Returns the decoded IPv6 when host is an IP of such type, or undef.
+Returns the IPv6 when host is such a literal, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+
+=cut
+    
+sub ipv6 {
+    my ($self) = @_;
+    #
+    # ipv6 never have a percent encoded character
+    #
+    return $self->_generic_getter('_ipv6')
+}
 
 =head2 $self->ipvx
 
-Returns the decoded IPvI<future> (as per the spec) when host is an IP of such type, or undef.
+Returns the decoded IPvI<future> (as per the spec) when host is such a literal, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+
+=cut
+    
+sub ipvx {
+    my ($self) = @_;
+    #
+    # ipvx never have a percent encoded character
+    #
+    return $self->_generic_getter('_ipvx')
+}
 
 =head2 $self->zone
 
-Returns the decoded IP Zone Id when host is an IPv6 literal, or undef.
+Returns the IPv6 Zone Id, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+
+=cut
+    
+sub zone {
+    my ($self) = @_;
+    #
+    # zone never have a percent encoded character
+    #
+    return $self->_generic_getter('_zone')
+}
 
 =head2 $self->port
 
 Returns the port, or undef.
 
+=cut
+    
+sub port {
+    my ($self) = @_;
+    #
+    # port never have a percent encoded character
+    #
+    return $self->_generic_getter('_port')
+}
+
 =head2 $self->path
 
-Returns the decoded path, or the empty string.
+Returns the path, or the empty string. C<$type> is either 'decoded' (default value) or 'origin'.
+
+=cut
+    
+sub path {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_path', $type)
+}
 
 =head2 $self->segments
 
-Returns the path segments as an array reference, which may be empty.
+Returns the path segments as an array reference, which may be empty. C<$type> is either 'decoded' (default value) or 'origin'.
+
+=cut
+    
+sub segments {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_segments', $type)
+}
 
 =head2 $self->query
 
-Returns the decoded query, or undef.
+Returns the query, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+
+=cut
+    
+sub query {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_query', $type)
+}
 
 =head2 $self->fragment
 
-Returns the decoded fragment, or undef.
+Returns the fragment, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+
+=cut
+    
+sub fragment {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_fragment', $type)
+}
 
 =head2 $self->opaque
 
-Returns the part between scheme and fragment.
+Returns the part between scheme and fragment. C<$type> is either 'decoded' (default value) or 'origin'.
+
+=cut
+    
+sub opaque {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_opaque', $type)
+}
 
 =cut
 
@@ -223,7 +353,7 @@ Returns a true value if the scheme is recognized.
 sub has_recognized_scheme {
   my ($self) = @_;
 
-  return defined($self->_scheme)
+  return defined($self->scheme)
 }
 
 =head2 $self->as_string
@@ -235,7 +365,7 @@ Returns the unescaped string of the URI, which is always a valid Perl-extended U
 sub as_string {
   my ($self) = @_;
 
-  return $self->string('decode')
+  return $self->string
 }
 
 =head2 $self->is_abs
@@ -247,7 +377,7 @@ Returns a true value if the parsed URI is absolute, a false value otherwise.
 sub is_abs {
   my ($self) = @_;
 
-  return defined($self->_scheme)
+  return $self->has_recognized_scheme && ! defined($self->fragment)
 }
 
 =head2 $self->base
@@ -269,14 +399,24 @@ sub base {
     my $_string = $self->_string->{origin};
     my $_fragment = $self->_fragment->{origin};
     my $quote__fragment = quotemeta($_fragment);
-    $_string =~ s/$quote__fragment$//;
+    $_string =~ s/#$quote__fragment$//;
     return ref($self)->new($_string)
   }
 }
 
-#
-# Internals
-#
+# ----------------
+# Internal helpers
+# ----------------
+
+sub _generic_getter {
+    my ($self, $_what, $type) = @_;
+
+    $type //= 'decode';
+    my $value = $self->$_what;
+
+    return unless defined($value);
+    return $value->{$type}
+}
 
 sub _generate_actions {
   my ($class, @attributes) = @_;
@@ -294,6 +434,9 @@ sub _generate_actions {
   }
 }
 
+# ------------------------
+# Grammar Internal helpers
+# ------------------------
 #
 # This _pct_encoded method guarantees that the output is a sequence of ASCII characters
 # even if the UTF-8 flag would be set. For instance sequence %ce%a3 will be
