@@ -364,7 +364,7 @@ sub eq {
     #
     # Since we already do full normalization when valuating the parse tree, we use it
     #
-    return $self->string('canonica l') eq $other->string('canonical')
+    return $self->string('canonical') eq $other->string('canonical')
 }
 
 # ----------------
