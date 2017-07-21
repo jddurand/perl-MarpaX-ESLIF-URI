@@ -364,7 +364,7 @@ sub eq {
     #
     # Since we already do full normalization when valuating the parse tree, we use it
     #
-    return $self->string('canonical') eq $other->string('canonical')
+    return $self->string('canonica l') eq $other->string('canonical')
 }
 
 # ----------------
@@ -391,6 +391,7 @@ sub _generate_actions {
     next if $class->can($method);
     my $stub = eval "sub {
       my (\$self, \@args) = \@_;
+      print STDERR \"SETTING $attribute\\n\";
       \$self->_set_$attribute(\$self->__concat(\@args))
     }" || croak "Failed to create action stub for attribute $attribute, $@";
     fresh $method => $stub;
@@ -406,6 +407,7 @@ sub _remove_dot_segments {
     my $input = $path;
     my $output = '';
 
+    # printf "%s %-20s %-20s\n", 1, $output, $input;
     # 2.  While the input buffer is not empty, loop as follows:
     while (length($input)) {
 
@@ -413,9 +415,11 @@ sub _remove_dot_segments {
         #     then remove that prefix from the input buffer; otherwise,
         if (substr($input, 0, 3) eq '../') {
             substr($input, 0, 3, '');
+            # printf "%s %-20s %-20s\n", 'A', $output, $input;
             next;
         } elsif (substr($input, 0, 2) eq './') {
             substr($input, 0, 2, '');
+            # printf "%s %-20s %-20s\n", 'A', $output, $input;
             next;
         }
 
@@ -424,9 +428,11 @@ sub _remove_dot_segments {
         #     prefix with "/" in the input buffer; otherwise,
         if (substr($input, 0, 3) eq '/./') {
             substr($input, 0, 3, '/');
+            # printf "%s %-20s %-20s\n", 'B', $output, $input;
             next;
-        } elsif ($input =~ /\/\.(?:\/|\z)/) {
+        } elsif ($input =~ /^\/\.(?:\/|\z)/) {
             substr($input, 0, 2, '/');
+            # printf "%s %-20s %-20s\n", 'B', $output, $input;
             next;
         }
 
@@ -435,13 +441,15 @@ sub _remove_dot_segments {
         #     prefix with "/" in the input buffer and remove the last
         #     segment and its preceding "/" (if any) from the output
         #     buffer; otherwise,
-        if (substr($input, 0, 4) eq '/.//') {
+        if (substr($input, 0, 4) eq '/../') {
             substr($input, 0, 4, '/');
             $output =~ s/\/?[^\/]*\z//;
+            # printf "%s %-20s %-20s\n", 'C', $output, $input;
             next;
-        } elsif ($input =~ /\/\.\.(?:\/|\z)/) {
+        } elsif ($input =~ /^\/\.\.(?:\/|\z)/) {
             substr($input, 0, 3, '/');
             $output =~ s/\/?[^\/]*\z//;
+            # printf "%s %-20s %-20s\n", 'C', $output, $input;
             next;
         }
 
@@ -449,6 +457,7 @@ sub _remove_dot_segments {
         #     that from the input buffer; otherwise,
         if (($input eq '.') || ($input eq '..')) {
             $input = '';
+            # printf "%s %-20s %-20s\n", 'D', $output, $input;
             next;
         }
 
@@ -456,8 +465,9 @@ sub _remove_dot_segments {
         #     the output buffer, including the initial "/" character (if
         #     any and any subsequent characters up to, but not including,
         #     the next "/" character or the end of the input buffer.
-        $input =~ s/(^\/?[^\/]*)//;
-        $output .= $1
+        $input =~ s/^(\/?[^\/]*)//;
+        $output .= $1;
+        # printf "%s %-20s %-20s\n", 'E', $output, $input;
     }
     
     # 3.  Finally, the output buffer is returned as the result of
@@ -490,7 +500,7 @@ around _set__host => sub {
 
 around _set__path => sub {
     my ($orig, $self, $value) = @_;
-
+    $log->infof("%s SETTING PATH TO %s", ref($self), $value);
     #
     # Canonical path is removing dot segments
     #
@@ -739,11 +749,11 @@ __DATA__
 <path abempty value>     ::= <path abempty unit>*
 <path absolute>          ::= <path absolute value>                                          action => _action_path
 <path absolute value>    ::= "/"
-                           | "/" <segment nz> <path abempty>
+                           | "/" <segment nz> <path abempty value>
 <path noscheme>          ::= <path noscheme value>                                          action => _action_path
-<path noscheme value>    ::= <segment nz nc> <path abempty>
+<path noscheme value>    ::= <segment nz nc> <path abempty value>
 <path rootless>          ::= <path rootless value>                                          action => _action_path
-<path rootless value>    ::= <segment nz> <path abempty>
+<path rootless value>    ::= <segment nz> <path abempty value>
 <path empty>             ::=                                                                # Default value for path is ''
 
 <segment>                ::= <pchar>*                                                       action => __segment
