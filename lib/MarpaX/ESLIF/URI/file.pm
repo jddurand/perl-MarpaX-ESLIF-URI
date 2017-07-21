@@ -55,13 +55,19 @@ sub grammar {
   return $GRAMMAR;
 }
 
-#
-# Class::Tiny generated methods
-#
-
 =head2 $self->drive
 
-Returns the drive letter, or undef.
+Returns the drive, or undef.
+
+=cut
+    
+sub drive {
+    my ($self) = @_;
+    #
+    # scheme never have a percent encoded character
+    #
+    return $self->_generic_getter('_drive')
+}
 
 =head1 SEE ALSO
 

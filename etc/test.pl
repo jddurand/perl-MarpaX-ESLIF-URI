@@ -29,7 +29,7 @@ Log::Any::Adapter->set('Log4perl');
 local %Data::Scan::Printer::Option = (with_ansicolor => 0);
 
 my $format  = '%-25s : %s';
-my @methods = qw/string scheme authority host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque has_recognized_scheme as_string is_abs/;
+my @methods = qw/string scheme authority host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque has_recognized_scheme as_string is_abs drive/;
 
 while (@ARGV) {
   print "From argument...:\n";
@@ -40,6 +40,7 @@ while (@ARGV) {
       $log->infof($format, 'Type', ref($uri));
       $log->infof($format, 'Stringification', "$uri");
       foreach (@methods) {
+          next unless $uri->can($_);
           $log->infof($format, $_, $uri->$_);
       }
   };
@@ -52,6 +53,7 @@ while (@ARGV) {
     $log->infof($format, 'Type', ref($clone));
     $log->infof($format, 'Stringification', "$clone");
     foreach (@methods) {
+        next unless $clone->can($_);
         $log->infof($format, $_, $clone->$_);
     }
   };
@@ -64,6 +66,7 @@ while (@ARGV) {
     $log->infof($format, 'Type', ref($base));
     $log->infof($format, 'Stringification', "$base");
     foreach (@methods) {
+        next unless $base->can($_);
         $log->infof($format, $_, $base->$_);
     }
   };
