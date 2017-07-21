@@ -68,8 +68,8 @@ while (@ARGV) {
   $log->info('eq test');
   $log->info('----------------------------------------');
   eval {
-      my $cmp = $self cmp $base;
-      $log->infof($format, '$self cmp $base', $cmp);
+      my $eq = $self eq $base;
+      $log->infof($format, '$self eq $base', $eq);
   };
   $log->errorf('%s', $@) if $@;
 }

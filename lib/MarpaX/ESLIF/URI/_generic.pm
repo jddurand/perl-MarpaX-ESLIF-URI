@@ -17,7 +17,7 @@ use MarpaX::ESLIF;
 use MarpaX::ESLIF::URI::_generic::RecognizerInterface;
 use MarpaX::ESLIF::URI::_generic::ValueInterface;
 use Safe::Isa qw/$_isa/;
-use overload '""' => 'string', 'cmp' => 'cmp', fallback => 1;
+use overload '""' => 'string', 'eq' => 'eq', fallback => 1;
 
 has '_origin'    => ( is => 'ro' );
 has '_string'    => ( is => 'rwp' );
@@ -352,27 +352,19 @@ sub base {
   }
 }
 
-=head2 $self->cmp($other)
+=head2 $self->eq($other)
 
 Returns a instance that is the absolute version of current instance if possible, or croak on failure.
 
 =cut
 
-sub cmp {
-    my ($self, $other, $swap) = @_;
+sub eq {
+    my ($self, $other) = @_;
 
-    croak '$self must be an instance of ' . __PACKAGE__ unless $self->$_isa(__PACKAGE__);
-    croak '$other must be an instance of ' . __PACKAGE__ unless $other->$_isa(__PACKAGE__);
-
-    if ($swap) {
-        my $tmp = $self;
-        $self = $other;
-        $other = $tmp
-    }
     #
     # Since we already do full normalization when valuating the parse tree, we use it
     #
-    return $self->string('canonical') cmp $other->string('canonical')
+    return $self->string('canonical') eq $other->string('canonical')
 }
 
 # ----------------
