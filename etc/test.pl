@@ -32,8 +32,11 @@ my $format  = '%-25s : %s';
 my @methods = qw/string scheme authority host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque has_recognized_scheme as_string is_abs drive/;
 
 while (@ARGV) {
-  print "From argument...:\n";
+
   my $uri;
+  $log->info('----------------------------------------');
+  $log->info('Argument test');
+  $log->info('----------------------------------------');
   eval {
       $uri = MarpaX::ESLIF::URI->new(shift @ARGV);
       # dspp($uri); print "\n";
@@ -44,9 +47,11 @@ while (@ARGV) {
           $log->infof($format, $_, $uri->$_);
       }
   };
-  print "$@" if $@;
+  $log->errorf('%s', $@) if $@;
 
-  print "\nFrom clone...:\n";
+  $log->info('----------------------------------------');
+  $log->info('Clone test');
+  $log->info('----------------------------------------');
   eval {
     my $clone = $uri->clone;
     # dspp($clone); print "\n";
@@ -57,9 +62,11 @@ while (@ARGV) {
         $log->infof($format, $_, $clone->$_);
     }
   };
-  print "$@" if $@;
+  $log->errorf('%s', $@) if $@;
 
-  print "\nFrom base...:\n";
+  $log->info('----------------------------------------');
+  $log->info('Base test');
+  $log->info('----------------------------------------');
   eval {
     my $base = $uri->base;
     # dspp($base); print "\n";
@@ -70,7 +77,7 @@ while (@ARGV) {
         $log->infof($format, $_, $base->$_);
     }
   };
-  print "$@" if $@;
+  $log->errorf('%s', $@) if $@;
 
 }
 
