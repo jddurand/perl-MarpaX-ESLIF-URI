@@ -428,6 +428,16 @@ around _set__host => sub {
     $self->$orig($value)
 };
 
+around _set__path => sub {
+    my ($orig, $self, $value) = @_;
+
+    #
+    # Canonical path is removing dot segments
+    #
+    $value->{canonical} = lc($value->{canonical});
+    $self->$orig($value)
+};
+
 # ------------------------
 # Grammar Internal helpers
 # ------------------------
@@ -438,18 +448,28 @@ around _set__host => sub {
 #
 sub __pct_encoded {
     my ($self, undef, $hex1, $hex2) = @_;
-
+    #
+    # Note that here $hex are terminals, so in fact hex's origin == decode == canonical
+    #
     my $origin = join('', '%', $hex1->{origin}, $hex2->{origin});
     my $decode = chr(hex(join('', $hex1->{decode}, $hex2->{decode})));
     #
-    # Full normalization is equivalent to decode
-    return { origin => $origin, decode => $decode, canonical => $decode }
+    # Normalization is decoding any percent-encoded octet that corresponds
+    # to an unreserved character, as described in Section 2.3:
+    # unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
+    # 
+    my $canonical = ($decode =~ /[A-Za-z0-9\-._~]/) ? $decode : $origin;
+    return { origin => $origin, decode => $decode, canonical => $canonical }
 }
 #
 # Special for zone
 #
 sub __percent_character {
-    return { origin => '%25', decode => '%', canonical => '%'}
+    #
+    # '%' decoded character is not an unreserved character, so the
+    # canonicalized form remains %25
+    #
+    return { origin => '%25', decode => '%', canonical => '%25'}
 }
 #
 # Pushes segments in a _segment[] array
