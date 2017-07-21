@@ -405,6 +405,74 @@ sub _generate_actions {
   }
 }
 
+sub _remove_dot_segments {
+    my ($self, $path) = @_;
+
+    # 1.  The input buffer is initialized with the now-appended path
+    #     components and the output buffer is initialized to the empty
+    #     string.
+    my $input = $path;
+    my $output = '';
+
+    # 2.  While the input buffer is not empty, loop as follows:
+    while (length($input)) {
+
+        # A.  If the input buffer begins with a prefix of "../" or "./",
+        #     then remove that prefix from the input buffer; otherwise,
+        if (substr($input, 0, 3) eq '../') {
+            substr($input, 0, 3, '');
+            next;
+        } elsif (substr($input, 0, 2) eq './') {
+            substr($input, 0, 2, '');
+            next;
+        }
+
+        # B.  if the input buffer begins with a prefix of "/./" or "/.",
+        #     where "." is a complete path segment, then replace that
+        #     prefix with "/" in the input buffer; otherwise,
+        if (substr($input, 0, 3) eq '/./') {
+            substr($input, 0, 3, '/');
+            next;
+        } elsif ($input =~ /\/\.(?:\/|\z)/) {
+            substr($input, 0, 2, '/');
+            next;
+        }
+
+        # C.  if the input buffer begins with a prefix of "/../" or "/..",
+        #     where ".." is a complete path segment, then replace that
+        #     prefix with "/" in the input buffer and remove the last
+        #     segment and its preceding "/" (if any) from the output
+        #     buffer; otherwise,
+        if (substr($input, 0, 4) eq '/.//') {
+            substr($input, 0, 4, '/');
+            $output =~ s/\/?[^\/]*\z//;
+            next;
+        } elsif ($input =~ /\/\.\.(?:\/|\z)/) {
+            substr($input, 0, 3, '/');
+            $output =~ s/\/?[^\/]*\z//;
+            next;
+        }
+
+        # D.  if the input buffer consists only of "." or "..", then remove
+        #     that from the input buffer; otherwise,
+        if (($input eq '.') || ($input eq '..')) {
+            $input = '';
+            next;
+        }
+
+        # E.  move the first path segment in the input buffer to the end of
+        #     the output buffer, including the initial "/" character (if
+        #     any and any subsequent characters up to, but not including,
+        #     the next "/" character or the end of the input buffer.
+        $input =~ s/(^\/?[^\/]*)//;
+        $output .= $1
+    }
+    
+    # 3.  Finally, the output buffer is returned as the result of
+    #     remove_dot_segments.
+    return $output
+}
+
 # -------------
 # Normalization
 # -------------
@@ -434,7 +502,7 @@ around _set__path => sub {
     #
     # Canonical path is removing dot segments
     #
-    $value->{canonical} = lc($value->{canonical});
+    $value->{canonical} = $self->_remove_dot_segments($value->{canonical});
     $self->$orig($value)
 };
 
