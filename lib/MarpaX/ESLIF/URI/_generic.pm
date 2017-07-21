@@ -10,31 +10,32 @@ package MarpaX::ESLIF::URI::_generic;
 # VERSION
 
 use Carp qw/croak/;
-use Class::Method::Modifiers qw/fresh/;
+use Class::Method::Modifiers qw/fresh around/;
 use Class::Tiny::Antlers;
 use Log::Any qw/$log/;
 use MarpaX::ESLIF;
 use MarpaX::ESLIF::URI::_generic::RecognizerInterface;
 use MarpaX::ESLIF::URI::_generic::ValueInterface;
-use overload '""' => 'as_string', fallback => 1;
+use Safe::Isa qw/$_isa/;
+use overload '""' => 'string', 'cmp' => 'cmp', fallback => 1;
 
 has '_origin'    => ( is => 'ro' );
-has '_string'    => ( is => 'rw' );
-has '_scheme'    => ( is => 'rw' );
-has '_authority' => ( is => 'rw' );
-has '_userinfo'  => ( is => 'rw' );
-has '_host'      => ( is => 'rw' );
-has '_ip'        => ( is => 'rw' );
-has '_ipv4'      => ( is => 'rw' );
-has '_ipv6'      => ( is => 'rw' );
-has '_ipvx'      => ( is => 'rw' );
-has '_zone'      => ( is => 'rw' );
-has '_port'      => ( is => 'rw' );
-has '_path'      => ( is => 'rw', default => sub { { origin => '', decode => '' } }); # Default is empty path ./..
-has '_segments'  => ( is => 'rw', default => sub { { origin => [], decode => [] } });  # ../. i.e. no component
-has '_query'     => ( is => 'rw' );
-has '_fragment'  => ( is => 'rw' );
-has '_opaque'    => ( is => 'rw' );
+has '_string'    => ( is => 'rwp' );
+has '_scheme'    => ( is => 'rwp' );
+has '_authority' => ( is => 'rwp' );
+has '_userinfo'  => ( is => 'rwp' );
+has '_host'      => ( is => 'rwp' );
+has '_ip'        => ( is => 'rwp' );
+has '_ipv4'      => ( is => 'rwp' );
+has '_ipv6'      => ( is => 'rwp' );
+has '_ipvx'      => ( is => 'rwp' );
+has '_zone'      => ( is => 'rwp' );
+has '_port'      => ( is => 'rwp' );
+has '_path'      => ( is => 'rwp', default => sub { { origin => '', decode => '', canonical => '' } }); # Default is empty path ./..
+has '_segments'  => ( is => 'rwp', default => sub { { origin => [], decode => [], canonical => [] } });  # ../. i.e. no component
+has '_query'     => ( is => 'rwp' );
+has '_fragment'  => ( is => 'rwp' );
+has '_opaque'    => ( is => 'rwp' );
 
 #
 # All attributes starting with an underscore are the result of parsing
@@ -56,21 +57,10 @@ Instantiate a new object, or croak on failure. Takes as parameter an URI that wi
 
 =cut
 
-sub BUILDARGS {
-  my ($class, @args) = @_;
-
-  if ($#args == 0) {
-    return { _origin => $args[0] }
-  } else {
-    return {@args}
-  }
-}
-
 sub BUILD {
     my ($self) = @_;
 
     my $_origin = $self->_origin;
-    return unless defined($_origin);
     $_origin = "$_origin";
     if (length($_origin)) {
         my $recognizerInterface = MarpaX::ESLIF::URI::_generic::RecognizerInterface->new($_origin);
@@ -122,7 +112,7 @@ sub grammar {
 
 =head2 $self->string($type)
 
-Returns the string version of the URI, C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the string version of the URI, C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -148,7 +138,7 @@ sub scheme {
 
 =head2 $self->authority($type)
 
-Returns the authority, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the authority, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -160,7 +150,7 @@ sub authority {
 
 =head2 $self->userinfo($type)
 
-Returns the userinfo, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the userinfo, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -172,7 +162,7 @@ sub userinfo {
 
 =head2 $self->host
 
-Returns the host (which may contain C<[]> delimiters in case of Ipv6 literal), or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the host (which may contain C<[]> delimiters in case of Ipv6 literal), or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -184,7 +174,7 @@ sub host {
 
 =head2 $self->ip
 
-Returns the IP when host is such a literal, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the IP when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -212,7 +202,7 @@ sub ipv4 {
 
 =head2 $self->ipv6
 
-Returns the IPv6 when host is such a literal, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the IPv6 when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -226,7 +216,7 @@ sub ipv6 {
 
 =head2 $self->ipvx
 
-Returns the decoded IPvI<future> (as per the spec) when host is such a literal, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the decoded IPvI<future> (as per the spec) when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -240,7 +230,7 @@ sub ipvx {
 
 =head2 $self->zone
 
-Returns the IPv6 Zone Id, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the IPv6 Zone Id, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -268,7 +258,7 @@ sub port {
 
 =head2 $self->path
 
-Returns the path, or the empty string. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the path, or the empty string. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -280,7 +270,7 @@ sub path {
 
 =head2 $self->segments
 
-Returns the path segments as an array reference, which may be empty. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the path segments as an array reference, which may be empty. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -292,7 +282,7 @@ sub segments {
 
 =head2 $self->query
 
-Returns the query, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the query, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -304,7 +294,7 @@ sub query {
 
 =head2 $self->fragment
 
-Returns the fragment, or undef. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the fragment, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -316,7 +306,7 @@ sub fragment {
 
 =head2 $self->opaque
 
-Returns the part between scheme and fragment. C<$type> is either 'decoded' (default value) or 'origin'.
+Returns the part between scheme and fragment. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
 
 =cut
     
@@ -326,58 +316,16 @@ sub opaque {
     return $self->_generic_getter('_opaque', $type)
 }
 
-=cut
-
-#
-# Our additional methods
-#
-
-=head2 $self->clone
-
-Returns an exact clone of current instance.
-
-=cut
-
-sub clone {
-  my ($self) = @_;
-
-  ref($self)->new($self->_origin)
-}
-
-=head2 $self->has_recognized_scheme
-
-Returns a true value if the scheme is recognized.
-
-=cut
-
-sub has_recognized_scheme {
-  my ($self) = @_;
-
-  return defined($self->scheme)
-}
-
-=head2 $self->as_string
-
-Returns the unescaped string of the URI, which is always a valid Perl-extended UTF-8 string. This is also what prints out the stringification of C<$self>.
-
-=cut
-
-sub as_string {
-  my ($self) = @_;
-
-  return $self->string
-}
-
 =head2 $self->is_abs
 
-Returns a true value if the parsed URI is absolute, a false value otherwise.
+Returns a true value if the URI is absolute.
 
 =cut
 
 sub is_abs {
   my ($self) = @_;
 
-  return $self->has_recognized_scheme && ! defined($self->fragment)
+  return defined($self->scheme) && ! defined($self->fragment)
 }
 
 =head2 $self->base
@@ -400,8 +348,31 @@ sub base {
     my $_fragment = $self->_fragment->{origin};
     my $quote__fragment = quotemeta($_fragment);
     $_string =~ s/#$quote__fragment$//;
-    return ref($self)->new($_string)
+    return ref($self)->new(_origin => $_string)
   }
+}
+
+=head2 $self->cmp($other)
+
+Returns a instance that is the absolute version of current instance if possible, or croak on failure.
+
+=cut
+
+sub cmp {
+    my ($self, $other, $swap) = @_;
+
+    croak '$self must be an instance of ' . __PACKAGE__ unless $self->$_isa(__PACKAGE__);
+    croak '$other must be an instance of ' . __PACKAGE__ unless $other->$_isa(__PACKAGE__);
+
+    if ($swap) {
+        my $tmp = $self;
+        $self = $other;
+        $other = $tmp
+    }
+    #
+    # Since we already do full normalization when valuating the parse tree, we use it
+    #
+    return $self->string('canonical') cmp $other->string('canonical')
 }
 
 # ----------------
@@ -428,11 +399,34 @@ sub _generate_actions {
     next if $class->can($method);
     my $stub = eval "sub {
       my (\$self, \@args) = \@_;
-      \$self->$attribute(\$self->__concat(\@args))
+      \$self->_set_$attribute(\$self->__concat(\@args))
     }" || croak "Failed to create action stub for attribute $attribute, $@";
     fresh $method => $stub;
   }
 }
+
+# -------------
+# Normalization
+# -------------
+around _set__scheme => sub {
+    my ($orig, $self, $value) = @_;
+
+    #
+    # Canonical scheme is case insensitive
+    #
+    $value->{canonical} = lc($value->{canonical});
+    $self->$orig($value)
+};
+
+around _set__host => sub {
+    my ($orig, $self, $value) = @_;
+
+    #
+    # Canonical host is case insensitive
+    #
+    $value->{canonical} = lc($value->{canonical});
+    $self->$orig($value)
+};
 
 # ------------------------
 # Grammar Internal helpers
@@ -445,13 +439,17 @@ sub _generate_actions {
 sub __pct_encoded {
     my ($self, undef, $hex1, $hex2) = @_;
 
-    return { origin => join('', '%', $hex1->{origin}, $hex2->{origin}), decode => chr(hex(join('', $hex1->{decode}, $hex2->{decode}))) }
+    my $origin = join('', '%', $hex1->{origin}, $hex2->{origin});
+    my $decode = chr(hex(join('', $hex1->{decode}, $hex2->{decode})));
+    #
+    # Full normalization is equivalent to decode
+    return { origin => $origin, decode => $decode, canonical => $decode }
 }
 #
 # Special for zone
 #
 sub __percent_character {
-    return { origin => '%25', decode => '%'}
+    return { origin => '%25', decode => '%', canonical => '%'}
 }
 #
 # Pushes segments in a _segment[] array
@@ -460,8 +458,9 @@ sub __segment {
     my ($self, @args) = @_;
 
     my $concat = $self->__concat(@args);
-    push(@{$self->_segments->{origin}}, $concat->{origin});
-    push(@{$self->_segments->{decode}}, $concat->{decode});
+    push(@{$self->_segments->{origin}},    $concat->{origin});
+    push(@{$self->_segments->{decode}},    $concat->{decode});
+    push(@{$self->_segments->{canonical}}, $concat->{canonical});
     return $concat
 }
 #
@@ -471,13 +470,12 @@ sub __segment {
 sub __concat {
     my ($self, @args) = @_;
 
-    return undef unless @args;
-
-    my %rc = ( origin => '', decode => '' );
+    my %rc = ( origin => '', decode => '', canonical => '' );
     foreach my $arg (@args) {
         next unless ref($arg);
-        $rc{origin} .= $arg->{origin} // '';
-        $rc{decode} .= $arg->{decode} // '';
+        $rc{origin}    .= $arg->{origin} // '';
+        $rc{decode}    .= $arg->{decode} // '';
+        $rc{canonical} .= $arg->{canonical} // '';
       }
     return \%rc
 }
@@ -487,12 +485,25 @@ sub __concat {
 #
 sub __symbol {
     my ($self, $symbol) = @_;
-    return { origin => $symbol, decode => $symbol }
+    #
+    # No normalization on symbol until we know the context
+    #
+    return { origin => $symbol, decode => $symbol, canonical => $symbol }
 }
 
 =head1 NOTES
 
+=over
+
+=item Logging
+
 This package is L<Log::Any> aware, and will use the later in case parsing fails to output error messages.
+
+=item Cloning
+
+Please do C<MarpaX::ESLIF::URI->new($self)>.
+
+=back
 
 =head1 SEE ALSO
 

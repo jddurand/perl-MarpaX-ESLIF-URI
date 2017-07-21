@@ -28,56 +28,49 @@ Log::Any::Adapter->set('Log4perl');
 
 local %Data::Scan::Printer::Option = (with_ansicolor => 0);
 
-my $format  = '%-25s : %s';
-my @methods = qw/string scheme authority host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque has_recognized_scheme as_string is_abs drive/;
+my $format  = '%-21s : %s';
+my @methods = qw/string scheme authority host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque drive/;
+my @_methods = qw/_string _scheme _authority _host _ip _ipv4 _ipv6 _ipvx _zone _port _path _segments _query _fragment _opaque _drive/;
 
 while (@ARGV) {
 
-  my $uri;
+  my $self;
   $log->info('----------------------------------------');
   $log->info('Argument test');
   $log->info('----------------------------------------');
   eval {
-      $uri = MarpaX::ESLIF::URI->new(shift @ARGV);
-      # dspp($uri); print "\n";
-      $log->infof($format, 'Type', ref($uri));
-      $log->infof($format, 'Stringification', "$uri");
-      foreach (@methods) {
-          next unless $uri->can($_);
-          $log->infof($format, $_, $uri->$_);
+      $self = MarpaX::ESLIF::URI->new(shift @ARGV);
+      dspp($self); print "\n";
+      $log->infof($format, 'Type', ref($self));
+      foreach (@methods, @_methods) {
+          next unless $self->can($_);
+          $log->infof($format, $_, $self->$_);
       }
-  };
-  $log->errorf('%s', $@) if $@;
-
-  $log->info('----------------------------------------');
-  $log->info('Clone test');
-  $log->info('----------------------------------------');
-  eval {
-    my $clone = $uri->clone;
-    # dspp($clone); print "\n";
-    $log->infof($format, 'Type', ref($clone));
-    $log->infof($format, 'Stringification', "$clone");
-    foreach (@methods) {
-        next unless $clone->can($_);
-        $log->infof($format, $_, $clone->$_);
-    }
   };
   $log->errorf('%s', $@) if $@;
 
   $log->info('----------------------------------------');
   $log->info('Base test');
   $log->info('----------------------------------------');
+  my $base;
   eval {
-    my $base = $uri->base;
-    # dspp($base); print "\n";
-    $log->infof($format, 'Type', ref($base));
-    $log->infof($format, 'Stringification', "$base");
-    foreach (@methods) {
-        next unless $base->can($_);
-        $log->infof($format, $_, $base->$_);
-    }
+      $base = $self->base;
+      # dspp($base); print "\n";
+      $log->infof($format, 'Type', ref($base));
+      foreach (@methods, @_methods) {
+          next unless $base->can($_);
+          $log->infof($format, $_, $base->$_);
+      }
   };
   $log->errorf('%s', $@) if $@;
 
+  $log->info('----------------------------------------');
+  $log->info('eq test');
+  $log->info('----------------------------------------');
+  eval {
+      my $cmp = $self cmp $base;
+      $log->infof($format, '$self cmp $base', $cmp);
+  };
+  $log->errorf('%s', $@) if $@;
 }
 

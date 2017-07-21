@@ -14,7 +14,7 @@ use MarpaX::ESLIF;
 
 extends 'MarpaX::ESLIF::URI::_generic';
 
-has '_drive' => (is => 'rw' );
+has '_drive' => (is => 'rwp' );
 
 #
 # Inherited method
