@@ -18,6 +18,7 @@ use MarpaX::ESLIF::URI::_generic::RecognizerInterface;
 use MarpaX::ESLIF::URI::_generic::ValueInterface;
 use overload '""' => 'as_string', fallback => 1;
 
+has '_origin'    => ( is => 'ro' );
 has '_string'    => ( is => 'rw' );
 has '_scheme'    => ( is => 'rw' );
 has '_authority' => ( is => 'rw' );
@@ -59,17 +60,24 @@ sub BUILDARGS {
   my ($class, @args) = @_;
 
   if ($#args == 0) {
-    return { _string => $args[0] }
+    return { _origin => $args[0] }
   } else {
     return {@args}
   }
 }
 
 sub BUILD {
-  my ($self) = @_;
+    my ($self) = @_;
 
-  my $_string = $self->_string;
-  $self->_parse($_string) unless ref($_string)
+    my $_origin = $self->_origin;
+    return unless defined($_origin);
+    $_origin = "$_origin";
+    if (length($_origin)) {
+        my $recognizerInterface = MarpaX::ESLIF::URI::_generic::RecognizerInterface->new($_origin);
+        my $valueInterface = MarpaX::ESLIF::URI::_generic::ValueInterface->new($self);
+
+        $self->grammar->parse($recognizerInterface, $valueInterface) || croak 'Parse failure'
+    }
 }
 
 =head2 $class->bnf
@@ -115,6 +123,18 @@ sub grammar {
 =head2 $self->string
 
 Returns the unescaped string version of the URI.
+
+=cut
+    
+sub string {
+    my ($self, $type) = @_;
+
+    $type //= 'decode';
+    my $_string = $self->_string;
+
+    return unless defined($_string);
+    return $_string->{$type}
+}
 
 =head2 $self->scheme
 
@@ -191,8 +211,7 @@ Returns an exact clone of current instance.
 sub clone {
   my ($self) = @_;
 
-  my $class = ref($self);
-  return $class->new(map { $_ => $self->$_ } Class::Tiny->get_all_attributes_for($class))
+  ref($self)->new($self->_origin)
 }
 
 =head2 $self->has_recognized_scheme
@@ -216,7 +235,7 @@ Returns the unescaped string of the URI, which is always a valid Perl-extended U
 sub as_string {
   my ($self) = @_;
 
-  return $self->_string->{decode}
+  return $self->string('decode')
 }
 
 =head2 $self->is_abs
@@ -273,17 +292,6 @@ sub _generate_actions {
     }" || croak "Failed to create action stub for attribute $attribute, $@";
     fresh $method => $stub;
   }
-}
-
-sub _parse {
-    my ($self, $string) = @_;
-
-    if (defined($string) && length($string)) {
-      my $recognizerInterface = MarpaX::ESLIF::URI::_generic::RecognizerInterface->new($string);
-      my $valueInterface = MarpaX::ESLIF::URI::_generic::ValueInterface->new($self);
-
-      $self->grammar->parse($recognizerInterface, $valueInterface) || croak 'Parse failure'
-    }
 }
 
 #

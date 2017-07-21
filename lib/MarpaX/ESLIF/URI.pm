@@ -6,24 +6,42 @@ package MarpaX::ESLIF::URI;
 
 # VERSION
 
-use Carp qw/croak/;
 use MarpaX::ESLIF::URI::_generic;
 use Class::Load qw/load_class/;
 use SUPER;
 
-sub new {
-  my ($class, $uri) = @_;
+my $re_scheme = qr/[A-Za-z][A-Za-z0-9+\-.]*/;
 
-  croak "Usage: $class->new(\$uri)" unless $uri;
-  #
-  # scheme is always a well define, ASCII only, thingy at the very beginning:
-  #
-  if ($uri =~ /^[A-Za-z][A-Za-z0-9+\-.]*/p) {
-      my $lc_scheme = lc(${^MATCH});
-      eval { load_class("MarpaX::ESLIF::URI::$lc_scheme")->new($uri) } // MarpaX::ESLIF::URI::_generic->new($uri)
+sub new {
+  my ($class, $str, $scheme) = @_;
+
+  my $self;
+  if (defined($str)) {
+      $str = "$str";
+      if ($str =~ /^($re_scheme):/) {
+          $scheme = $1
+      } else {
+          if (defined($scheme) && ($scheme =~ /^$re_scheme$/)) {
+              $str = "$scheme:$str"
+          } else {
+              $scheme = undef
+          }
+      }
   } else {
-      MarpaX::ESLIF::URI::_generic->new($uri)
+      $scheme = undef
   }
+
+  if (defined($scheme)) {
+      #
+      # If defined, here $scheme is guaranteed to contain only ASCII characters
+      #
+      my $lc_scheme = lc($scheme);
+      $self = eval { load_class("MarpaX::ESLIF::URI::$lc_scheme")->new($str) }
+  }
+  #
+  # Fallback to _generic
+  #
+  $self //= MarpaX::ESLIF::URI::_generic->new($str)
 }
 
 1;
