@@ -448,6 +448,12 @@ sub __pct_encoded {
     return { origin => join('', '%', $hex1->{origin}, $hex2->{origin}), decode => chr(hex(join('', $hex1->{decode}, $hex2->{decode}))) }
 }
 #
+# Special for zone
+#
+sub __percent_character {
+    return { origin => '%25', decode => '%'}
+}
+#
 # Pushes segments in a _segment[] array
 #
 sub __segment {
@@ -567,7 +573,8 @@ __DATA__
 <IP literal>             ::= "[" <IP literal interior> "]"
 <ZoneID interior>        ::= <unreserved>  | <pct encoded>
 <ZoneID>                 ::= <ZoneID interior>+                                             action => _action_zone
-<IPv6addrz>              ::= <IPv6address> "%25" <ZoneID>
+<IPv6addrz percent char> ::= "%25"                                                          action => __percent_character
+<IPv6addrz>              ::= <IPv6address> <IPv6addrz percent char> <ZoneID>
 
 <IPvFuture>              ::= "v" <HEXDIG many> "." <IPvFuture trailer>                      action => _action_ipvx
 <IPvFuture trailer unit> ::= <unreserved> | <sub delims> | ":"
