@@ -729,7 +729,7 @@ sub __segment {
     my ($self, @args) = @_;
 
     my $concat = $self->__concat(@args);
-    push(@{$self->_segments->{origin}},    $concat->{origin});
+    push(@{$self->_segments->{origin}},     $concat->{origin});
     push(@{$self->_segments->{decoded}},    $concat->{decoded});
     push(@{$self->_segments->{normalized}}, $concat->{normalized});
     return $concat
