@@ -12,6 +12,12 @@ use MarpaX::ESLIF::URI::_generic;
 
 my $re_scheme = qr/[A-Za-z][A-Za-z0-9+\-.]*/;
 
+=head2 $class->new($str, $scheme)
+
+Returns a instance that is a MarpaX::ESLIF::URI::$scheme representation of C<$str>, when C<$scheme> defaults to C<_generic> if there is no specific C<$scheme> implementation, or if the later fails.
+
+=cut
+
 sub new {
   my ($class, $str, $scheme) = @_;
 

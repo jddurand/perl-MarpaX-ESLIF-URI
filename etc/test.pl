@@ -26,11 +26,7 @@ our $defaultLog4perlConf = '
 Log::Log4perl::init(\$defaultLog4perlConf);
 Log::Any::Adapter->set('Log4perl');
 
-local %Data::Scan::Printer::Option = (with_ansicolor => 0);
-
 my $format  = '%-21s : %s';
-my @methods = qw/string scheme authority host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque drive/;
-my @_methods = qw/_string _scheme _authority _host _ip _ipv4 _ipv6 _ipvx _zone _port _path _segments _query _fragment _opaque _drive/;
 
 while (@ARGV) {
 
@@ -40,12 +36,7 @@ while (@ARGV) {
   $log->info('----------------------------------------');
   eval {
       $self = MarpaX::ESLIF::URI->new(shift @ARGV);
-      dspp($self); print "\n";
-      $log->infof($format, 'Type', ref($self));
-      foreach (@methods, @_methods) {
-          next unless $self->can($_);
-          $log->infof($format, $_, $self->$_);
-      }
+      inspect($self);
   };
   $log->errorf('%s', $@) if $@;
 
@@ -55,22 +46,41 @@ while (@ARGV) {
   my $base;
   eval {
       $base = $self->base;
-      # dspp($base); print "\n";
-      $log->infof($format, 'Type', ref($base));
-      foreach (@methods, @_methods) {
-          next unless $base->can($_);
-          $log->infof($format, $_, $base->$_);
-      }
+      inspect($base);
   };
   $log->errorf('%s', $@) if $@;
 
   $log->info('----------------------------------------');
-  $log->info('eq test');
+  $log->info('Resolve test');
+  $log->info('----------------------------------------');
+  my $resolve;
+  eval {
+      $resolve = $self->resolve(MarpaX::ESLIF::URI->new('http://there.com/x/y'));
+      inspect($resolve);
+  };
+  $log->errorf('%s', $@) if $@;
+
+  $log->info('----------------------------------------');
+  $log->info('base eq self test');
   $log->info('----------------------------------------');
   eval {
-      my $eq = $self eq $base;
-      $log->infof($format, '$self eq $base', $eq);
+      my $eq = $base eq $self;
+      $log->infof($format, '$base eq $self', $eq);
   };
   $log->errorf('%s', $@) if $@;
 }
 
+sub inspect {
+    my ($self) = @_;
+
+    local %Data::Scan::Printer::Option = (with_ansicolor => 0);
+    my @methods = qw/string scheme authority host ip ipv4 ipv6 ipvx zone port path segments query fragment opaque drive/;
+    my @_methods = qw/_string _scheme _authority _host _ip _ipv4 _ipv6 _ipvx _zone _port _path _segments _query _fragment _opaque _drive/;
+
+    # dspp($self); print "\n";
+    $log->infof($format, 'Type', ref($self));
+    foreach (@methods, @_methods) {
+        next unless $self->can($_);
+        $log->infof($format, $_, $self->$_);
+    }
+}

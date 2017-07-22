@@ -31,8 +31,8 @@ has '_ipv6'      => ( is => 'rwp' );
 has '_ipvx'      => ( is => 'rwp' );
 has '_zone'      => ( is => 'rwp' );
 has '_port'      => ( is => 'rwp' );
-has '_path'      => ( is => 'rwp', default => sub { { origin => '', decode => '', canonical => '' } }); # Default is empty path ./..
-has '_segments'  => ( is => 'rwp', default => sub { { origin => [], decode => [], canonical => [] } });  # ../. i.e. no component
+has '_path'      => ( is => 'rwp', default => sub { { origin => '', decoded => '', normalized => '' } }); # Default is empty path ./..
+has '_segments'  => ( is => 'rwp', default => sub { { origin => [], decoded => [], normalized => [] } });  # ../. i.e. no component
 has '_query'     => ( is => 'rwp' );
 has '_fragment'  => ( is => 'rwp' );
 has '_opaque'    => ( is => 'rwp' );
@@ -112,7 +112,7 @@ sub grammar {
 
 =head2 $self->string($type)
 
-Returns the string version of the URI, C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the string version of the URI, C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -138,7 +138,7 @@ sub scheme {
 
 =head2 $self->authority($type)
 
-Returns the authority, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the authority, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -150,7 +150,7 @@ sub authority {
 
 =head2 $self->userinfo($type)
 
-Returns the userinfo, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the userinfo, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -162,7 +162,7 @@ sub userinfo {
 
 =head2 $self->host
 
-Returns the host (which may contain C<[]> delimiters in case of Ipv6 literal), or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the host (which may contain C<[]> delimiters in case of Ipv6 literal), or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -174,7 +174,7 @@ sub host {
 
 =head2 $self->ip
 
-Returns the IP when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the IP when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -202,7 +202,7 @@ sub ipv4 {
 
 =head2 $self->ipv6
 
-Returns the IPv6 when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the IPv6 when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -216,7 +216,7 @@ sub ipv6 {
 
 =head2 $self->ipvx
 
-Returns the decoded IPvI<future> (as per the spec) when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the decoded IPvI<future> (as per the spec) when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -230,7 +230,7 @@ sub ipvx {
 
 =head2 $self->zone
 
-Returns the IPv6 Zone Id, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the IPv6 Zone Id, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -258,7 +258,7 @@ sub port {
 
 =head2 $self->path
 
-Returns the path, or the empty string. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the path, or the empty string. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -270,7 +270,7 @@ sub path {
 
 =head2 $self->segments
 
-Returns the path segments as an array reference, which may be empty. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the path segments as an array reference, which may be empty. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -282,7 +282,7 @@ sub segments {
 
 =head2 $self->query
 
-Returns the query, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the query, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -294,7 +294,7 @@ sub query {
 
 =head2 $self->fragment
 
-Returns the fragment, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the fragment, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -306,7 +306,7 @@ sub fragment {
 
 =head2 $self->opaque
 
-Returns the part between scheme and fragment. C<$type> is either 'decoded' (default value), 'origin' or 'canonical'.
+Returns the part between scheme and fragment. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
     
@@ -328,9 +328,11 @@ sub is_abs {
   return defined($self->scheme) && ! defined($self->fragment)
 }
 
-=head2 $self->base
+=head2 $self->abs
 
-Returns a instance that is the absolute version of current instance if possible, or croak on failure.
+Returns a instance that is the absolute version of C<$self> if possible, or croak on failure.
+
+When C<$self> is absolute, C<$self> itself is returned, otherwise it must have a scheme and a new instance without the origin fragment is returned.
 
 =cut
 
@@ -344,12 +346,133 @@ sub base {
     # We need the scheme
     #
     croak "Cannot derive a base URI without a scheme" unless defined $self->_scheme;
-    my $_string = $self->_string->{origin};
-    my $_fragment = $self->_fragment->{origin};
-    my $quote__fragment = quotemeta($_fragment);
-    $_string =~ s/#$quote__fragment$//;
-    return ref($self)->new(_origin => $_string)
+    my $origin = $self->string('origin');
+    my $fragment = $self->fragment('origin');
+    my $quote_fragment = quotemeta($fragment);
+    $origin =~ s/#$quote_fragment$//;
+    return ref($self)->new(_origin => $origin)
   }
+}
+
+=head2 $self->normalized
+
+Returns a instance where the origin is the normalised version of C<$self>.
+
+=cut
+
+sub normalized {
+  my ($self) = @_;
+
+  return ref($self)->new(_origin => $self->string('normalized'))
+}
+
+=head2 $self->decoded
+
+Returns a instance where the origin is the decoded version of C<$self>.
+
+=cut
+
+sub decoded {
+  my ($self) = @_;
+
+  return ref($self)->new(_origin => $self->string('decoded'))
+}
+
+=head2 $self->resolve($base, $strict)
+
+Returns a instance that converts C<$self> into C<$base> URI, or croak on failure.
+
+Default base is C<$self->base>.
+
+If C<$strict> is a true value, C<$self> is always considered relative to C<$base>, otherwise a new URI without C<$self>'s dot segments is returned when C<$self> has a scheme. Default is a true value.
+
+=cut
+
+sub resolve {
+    my ($self, $base, $strict) = @_;
+
+    $base //= $self->base;
+    $strict //= 1;
+
+    croak "$base must be absolute" unless $base->is_abs;
+
+    #
+    # 5.2.2.  Transform References
+    #
+    my %R;
+    $R{scheme}    = $self->scheme('origin');
+    $R{authority} = $self->authority('origin');
+    $R{path}      = $self->path('origin');
+    $R{query}     = $self->query('origin');
+    $R{fragment}  = $self->fragment('origin');
+
+    my %Base;
+    $Base{scheme}    = $base->scheme('origin');
+    $Base{authority} = $base->authority('origin');
+    $Base{path}      = $base->path('origin');
+    $Base{query}     = $base->query('origin');
+    $Base{fragment}  = $base->fragment('origin');
+
+    if ((! $strict) && (($R{scheme} // '') == $Base{scheme})) {
+        $R{scheme} = undef
+    }
+
+    my %T;
+    if (defined($R{scheme})) {
+        $T{scheme}    = $R{scheme};
+        $T{authority} = $R{authority};
+        $T{path}      = __PACKAGE__->remove_dot_segments($R{path});
+        $T{query}     = $R{query};
+    } else {
+        if (defined($R{authority})) {
+            $T{authority} = $R{authority};
+            $T{path}      = __PACKAGE__->remove_dot_segments($R{path});
+            $T{query}     = $R{query};
+        } else {
+            if (! length($R{path})) {
+                $T{path} = $Base{path};
+                if (defined(R{query})) {
+                    $T{query} = $R{query};
+                } else {
+                    $T{query} = $Base{query};
+                }
+            } else {
+                if (substr($R{path}, 0, 1) eq '/') {
+                    $T{path} = __PACKAGE__->remove_dot_segments($R{path});
+                } else {
+                    $T{path} = $self->_merge_paths($base);
+                    $T{path} = __PACKAGE__->remove_dot_segments($T{path});
+                }
+                $T{query} = $R{query};
+            }
+            $T{authority} = $Base{authority};
+        }
+        $T{scheme} = $Base{scheme};
+    }
+
+    $T{fragment} = $R{fragment};
+
+    #
+    # Reconstruct string
+    #
+    my $str;
+
+    my $scheme = $T{scheme};
+    $str .= "$scheme:" if defined($scheme);
+
+    my $authority = $T{authority};
+    $str .= "//$authority" if defined($authority);
+
+    my $path = $T{path} // '';
+    $str .= $path;
+
+    my $query = $T{query};
+    $str .= "?$query" if defined($query);
+
+    my $fragment = $T{fragment};
+    $str .= "#$fragment" if defined($fragment);
+
+    return MarpaX::ESLIF::URI->new($str)
 }
 
 =head2 $self->eq($other)
@@ -364,42 +487,39 @@ sub eq {
     #
     # Since we already do full normalization when valuating the parse tree, we use it
     #
-    return $self->string('canonical') eq $other->string('canonical')
+    return $self->string('normalized') eq $other->string('normalized')
 }
 
-# ----------------
-# Internal helpers
-# ----------------
+=head2 $self->clone
 
-sub _generic_getter {
-    my ($self, $_what, $type) = @_;
+Returns a clone of current instance.
 
-    $type //= 'decode';
-    my $value = $self->$_what;
+=cut
 
-    return unless defined($value);
-    return $value->{$type}
+sub clone {
+    my ($self) = @_;
+
+    return ref($self)->new($self)
 }
 
-sub _generate_actions {
-  my ($class, @attributes) = @_;
-  #
-  # All the attributes have an associate explicit action called _action_$aattribute
-  #
-  foreach my $attribute (@attributes) {
-    my $method = "_action$attribute";
-    next if $class->can($method);
-    my $stub = eval "sub {
-      my (\$self, \@args) = \@_;
-      print STDERR \"SETTING $attribute\\n\";
-      \$self->_set_$attribute(\$self->__concat(\@args))
-    }" || croak "Failed to create action stub for attribute $attribute, $@";
-    fresh $method => $stub;
-  }
+=head2 $self->as_string
+
+Alias to C<string> method.
+
+=cut
+
+sub as_string {
+    goto &string
 }
 
-sub _remove_dot_segments {
-    my ($self, $path) = @_;
+=head2 $class->remove_dot_segments($path)
+
+Implementation of L<RFC3896's remove_dot_segments|https://tools.ietf.org/html/rfc3986#section-5.2.4>.
+
+=cut
+
+sub remove_dot_segments {
+    my ($class, $path) = @_;
 
     # 1.  The input buffer is initialized with the now-appended path
     #     components and the output buffer is initialized to the empty
@@ -475,6 +595,68 @@ sub _remove_dot_segments {
     return $output
 }
 
+# ----------------
+# Internal helpers
+# ----------------
+
+sub _generic_getter {
+    my ($self, $_what, $type) = @_;
+
+    $type //= 'decoded';
+    my $value = $self->$_what;
+
+    return unless defined($value);
+    return $value->{$type}
+}
+
+sub _generate_actions {
+  my ($class, @attributes) = @_;
+  #
+  # All the attributes have an associate explicit action called _action_$aattribute
+  #
+  foreach my $attribute (@attributes) {
+    my $method = "_action$attribute";
+    next if $class->can($method);
+    my $stub = eval "sub {
+      my (\$self, \@args) = \@_;
+      \$self->_set_$attribute(\$self->__concat(\@args))
+    }" || croak "Failed to create action stub for attribute $attribute, $@";
+    fresh $method => $stub;
+  }
+}
+
+sub _merge_paths {
+    #
+    # In theory, this method should never be called with type != 'origin'
+    #
+    my ($self, $base, $type) = @_;
+    $type //= 'origin';
+
+    # If the base URI has a defined authority component and an empty
+    # path, then return a string consisting of "/" concatenated with the
+    # reference's path; otherwise,
+    return '/' . $self->path($type) if (defined($base->authority($type)) && ! length($base->path($type)));
+
+    # return a string consisting of the reference's path component
+    # appended to all but the last segment of the base URI's path (i.e.,
+    # excluding any characters after the right-most "/" in the base URI
+    # path, or excluding the entire base URI path if it does not contain
+    # any "/" characters).}
+    my $base_path = $base->path($type);
+    my $rindex = rindex($base_path, '/');
+    my $new_path;
+    if ($rindex >= 0) {
+        if ($rindex < (length($base_path) - 1)) {
+            $new_path = substr($base_path, 0, $rindex + 1)
+        } else {
+            $new_path = $base_path
+        }
+    } else {
+        $new_path = '';
+    }
+    return $new_path . $self->path($type)
+}
+
 # -------------
 # Normalization
 # -------------
@@ -482,9 +664,9 @@ around _set__scheme => sub {
     my ($orig, $self, $value) = @_;
 
     #
-    # Canonical scheme is case insensitive
+    # Normalized scheme is case insensitive
     #
-    $value->{canonical} = lc($value->{canonical});
+    $value->{normalized} = lc($value->{normalized});
     $self->$orig($value)
 };
 
@@ -492,19 +674,18 @@ around _set__host => sub {
     my ($orig, $self, $value) = @_;
 
     #
-    # Canonical host is case insensitive
+    # Normalized host is case insensitive
     #
-    $value->{canonical} = lc($value->{canonical});
+    $value->{normalized} = lc($value->{normalized});
     $self->$orig($value)
 };
 
 around _set__path => sub {
     my ($orig, $self, $value) = @_;
-    $log->infof("%s SETTING PATH TO %s", ref($self), $value);
     #
-    # Canonical path is removing dot segments
+    # Normalized path is removing dot segments
     #
-    $value->{canonical} = $self->_remove_dot_segments($value->{canonical});
+    $value->{normalized} = __PACKAGE__->remove_dot_segments($value->{normalized});
     $self->$orig($value)
 };
 
@@ -519,27 +700,28 @@ around _set__path => sub {
 sub __pct_encoded {
     my ($self, undef, $hex1, $hex2) = @_;
     #
-    # Note that here $hex are terminals, so in fact hex's origin == decode == canonical
+    # Note that here $hex are terminals, so in fact hex's origin == decoded == normalized
     #
     my $origin = join('', '%', $hex1->{origin}, $hex2->{origin});
-    my $decode = chr(hex(join('', $hex1->{decode}, $hex2->{decode})));
+    my $decoded = chr(hex(join('', $hex1->{decoded}, $hex2->{decoded})));
     #
     # Normalization is decoding any percent-encoded octet that corresponds
     # to an unreserved character, as described in Section 2.3:
     # unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
+    # else it should be normalized to uppercase.
     # 
-    my $canonical = ($decode =~ /[A-Za-z0-9\-._~]/) ? $decode : $origin;
-    return { origin => $origin, decode => $decode, canonical => $canonical }
+    my $normalized = ($decoded =~ /[A-Za-z0-9\-._~]/) ? $decoded : uc($origin);
+    return { origin => $origin, decoded => $decoded, normalized => $normalized }
 }
 #
 # Special for zone
 #
 sub __percent_character {
     #
-    # '%' decoded character is not an unreserved character, so the
-    # canonicalized form remains %25
+    # '%' decodedd character is not an unreserved character, so the
+    # normalizedized form remains %25
     #
-    return { origin => '%25', decode => '%', canonical => '%25'}
+    return { origin => '%25', decoded => '%', normalized => '%25'}
 }
 #
 # Pushes segments in a _segment[] array
@@ -549,8 +731,8 @@ sub __segment {
 
     my $concat = $self->__concat(@args);
     push(@{$self->_segments->{origin}},    $concat->{origin});
-    push(@{$self->_segments->{decode}},    $concat->{decode});
-    push(@{$self->_segments->{canonical}}, $concat->{canonical});
+    push(@{$self->_segments->{decoded}},    $concat->{decoded});
+    push(@{$self->_segments->{normalized}}, $concat->{normalized});
     return $concat
 }
 #
@@ -560,12 +742,12 @@ sub __segment {
 sub __concat {
     my ($self, @args) = @_;
 
-    my %rc = ( origin => '', decode => '', canonical => '' );
+    my %rc = ( origin => '', decoded => '', normalized => '' );
     foreach my $arg (@args) {
         next unless ref($arg);
         $rc{origin}    .= $arg->{origin} // '';
-        $rc{decode}    .= $arg->{decode} // '';
-        $rc{canonical} .= $arg->{canonical} // '';
+        $rc{decoded}    .= $arg->{decoded} // '';
+        $rc{normalized} .= $arg->{normalized} // '';
       }
     return \%rc
 }
@@ -578,7 +760,7 @@ sub __symbol {
     #
     # No normalization on symbol until we know the context
     #
-    return { origin => $symbol, decode => $symbol, canonical => $symbol }
+    return { origin => $symbol, decoded => $symbol, normalized => $symbol }
 }
 
 =head1 NOTES
@@ -588,10 +770,6 @@ sub __symbol {
 =item Logging
 
 This package is L<Log::Any> aware, and will use the later in case parsing fails to output error messages.
-
-=item Cloning
-
-Please do C<MarpaX::ESLIF::URI->new($self)>.
 
 =back
 
