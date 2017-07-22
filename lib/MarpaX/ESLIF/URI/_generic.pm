@@ -453,7 +453,7 @@ sub resolve {
     $T{fragment} = $R{fragment};
 
     #
-    # Reconstruct string
+    # 5.3.  Component Recomposition
     #
     my $str;
 
@@ -463,8 +463,7 @@ sub resolve {
     my $authority = $T{authority};
     $str .= "//$authority" if defined($authority);
 
-    my $path = $T{path} // '';
-    $str .= $path;
+    $str .= $T{path};  # Always defined as per the algorithm
 
     my $query = $T{query};
     $str .= "?$query" if defined($query);
