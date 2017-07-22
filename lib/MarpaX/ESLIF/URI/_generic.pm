@@ -960,10 +960,3 @@ __DATA__
 <ALPHA>                  ::= [A-Za-z]
 <DIGIT>                  ::= [0-9]
 <HEXDIG>                 ::= [0-9A-Fa-f]          # case insensitive
-
-#
-# For those using the old spec RFC2396
-#
-<uric>                   ::= <unreserved>
-                           | <pct encoded>
-                           | [;?:@&=+$,/]

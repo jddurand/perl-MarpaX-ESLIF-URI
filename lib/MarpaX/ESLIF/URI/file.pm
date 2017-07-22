@@ -65,7 +65,7 @@ Returns the drive, or undef.
 sub drive {
     my ($self) = @_;
     #
-    # scheme never have a percent encoded character
+    # drive never have a percent encoded character
     #
     return $self->_generic_getter('_drive')
 }
