@@ -663,7 +663,7 @@ around _set__scheme => sub {
     my ($orig, $self, $value) = @_;
 
     #
-    # Normalized scheme is case insensitive
+    # Normalized scheme is case insensitive and should be lowercased
     #
     $value->{normalized} = lc($value->{normalized});
     $self->$orig($value)
@@ -673,7 +673,7 @@ around _set__host => sub {
     my ($orig, $self, $value) = @_;
 
     #
-    # Normalized host is case insensitive
+    # Normalized host is case insensitive and should be lowercased
     #
     $value->{normalized} = lc($value->{normalized});
     $self->$orig($value)
@@ -682,7 +682,7 @@ around _set__host => sub {
 around _set__path => sub {
     my ($orig, $self, $value) = @_;
     #
-    # Normalized path is removing dot segments
+    # Normalized path is done by removing dot segments
     #
     $value->{normalized} = __PACKAGE__->remove_dot_segments($value->{normalized});
     $self->$orig($value)

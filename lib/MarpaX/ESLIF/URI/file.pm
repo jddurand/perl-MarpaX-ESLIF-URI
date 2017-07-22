@@ -10,6 +10,7 @@ package MarpaX::ESLIF::URI::file;
 # VERSION
 
 use Class::Tiny::Antlers;
+use Class::Method::Modifiers qw/around/;
 use MarpaX::ESLIF;
 
 extends 'MarpaX::ESLIF::URI::_generic';
@@ -68,6 +69,19 @@ sub drive {
     #
     return $self->_generic_getter('_drive')
 }
+
+# -------------
+# Normalization
+# -------------
+around _set__drive => sub {
+    my ($orig, $self, $value) = @_;
+
+    #
+    # Normalized drive is case insensitive and should be uppercased
+    #
+    $value->{normalized} = uc($value->{normalized});
+    $self->$orig($value)
+};
 
 =head1 SEE ALSO
 
