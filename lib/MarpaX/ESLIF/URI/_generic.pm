@@ -35,12 +35,11 @@ has '_path'      => ( is => 'rwp', default => sub { { origin => '', decoded => '
 has '_segments'  => ( is => 'rwp', default => sub { { origin => [], decoded => [], normalized => [] } });  # ../. i.e. no component
 has '_query'     => ( is => 'rwp' );
 has '_fragment'  => ( is => 'rwp' );
-has '_opaque'    => ( is => 'rwp' );
 
 #
 # All attributes starting with an underscore are the result of parsing
 #
-__PACKAGE__->_generate_actions(qw/_string _scheme _authority _userinfo _host _ip _ipv4 _ipv6 _ipvx _zone _port _path _segments _query _fragment _opaque/);
+__PACKAGE__->_generate_actions(qw/_string _scheme _authority _userinfo _host _ip _ipv4 _ipv6 _ipvx _zone _port _path _segments _query _fragment/);
 
 #
 # Constants
@@ -302,18 +301,6 @@ sub fragment {
     my ($self, $type) = @_;
 
     return $self->_generic_getter('_fragment', $type)
-}
-
-=head2 $self->opaque
-
-Returns the part between scheme and fragment. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
-
-=cut
-    
-sub opaque {
-    my ($self, $type) = @_;
-
-    return $self->_generic_getter('_opaque', $type)
 }
 
 =head2 $self->is_abs
@@ -795,7 +782,7 @@ __DATA__
 # Reference: https://tools.ietf.org/html/rfc3986#appendix-A
 # Reference: https://tools.ietf.org/html/rfc6874
 #
-<URI opaque>             ::= <hier part> <URI query>                                        action => _action_opaque
+<URI opaque>             ::= <hier part> <URI query>
 <URI>                    ::= <scheme> ":" <URI opaque> <URI fragment>
 <URI query>              ::= "?" <query>
 <URI query>              ::=
@@ -810,7 +797,7 @@ __DATA__
 
 <absolute URI>           ::= <scheme> ":" <hier part> <URI query>
 
-<relative ref opaque>    ::= <relative part> <URI query>                                    action => _action_opaque
+<relative ref opaque>    ::= <relative part> <URI query>
 <relative ref>           ::= <relative ref opaque> <URI fragment>
 
 <relative part>          ::= "//" <authority> <path abempty>
