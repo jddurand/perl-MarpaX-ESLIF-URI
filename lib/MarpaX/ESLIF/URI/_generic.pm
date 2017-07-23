@@ -782,8 +782,7 @@ __DATA__
 # Reference: https://tools.ietf.org/html/rfc3986#appendix-A
 # Reference: https://tools.ietf.org/html/rfc6874
 #
-<URI opaque>             ::= <hier part> <URI query>
-<URI>                    ::= <scheme> ":" <URI opaque> <URI fragment>
+<URI>                    ::= <scheme> ":" <hier part> <URI query> <URI fragment>
 <URI query>              ::= "?" <query>
 <URI query>              ::=
 <URI fragment>           ::= "#" <fragment>
@@ -797,8 +796,7 @@ __DATA__
 
 <absolute URI>           ::= <scheme> ":" <hier part> <URI query>
 
-<relative ref opaque>    ::= <relative part> <URI query>
-<relative ref>           ::= <relative ref opaque> <URI fragment>
+<relative ref>           ::= <relative part> <URI query> <URI fragment>
 
 <relative part>          ::= "//" <authority> <path abempty>
                            | <path absolute>
