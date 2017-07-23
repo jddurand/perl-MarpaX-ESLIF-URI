@@ -10,7 +10,6 @@ package MarpaX::ESLIF::URI::ftp;
 # VERSION
 
 use Class::Tiny::Antlers;
-use Class::Method::Modifiers qw/around/;
 use MarpaX::ESLIF;
 
 extends 'MarpaX::ESLIF::URI::_generic';
