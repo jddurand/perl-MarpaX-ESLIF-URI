@@ -114,7 +114,7 @@ sub grammar {
 Returns the string version of the URI, C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub string {
     my ($self, $type) = @_;
 
@@ -126,7 +126,7 @@ sub string {
 Returns the scheme, or undef.
 
 =cut
-    
+
 sub scheme {
     my ($self) = @_;
     #
@@ -140,7 +140,7 @@ sub scheme {
 Returns the authority, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub authority {
     my ($self, $type) = @_;
 
@@ -152,7 +152,7 @@ sub authority {
 Returns the userinfo, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub userinfo {
     my ($self, $type) = @_;
 
@@ -164,7 +164,7 @@ sub userinfo {
 Returns the host (which may contain C<[]> delimiters in case of Ipv6 literal), or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub host {
     my ($self, $type) = @_;
 
@@ -176,7 +176,7 @@ sub host {
 Returns the IP when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub ip {
     my ($self) = @_;
     #
@@ -190,7 +190,7 @@ sub ip {
 Returns the IPv4 when host is such a literal, or undef.
 
 =cut
-    
+
 sub ipv4 {
     my ($self) = @_;
     #
@@ -204,7 +204,7 @@ sub ipv4 {
 Returns the IPv6 when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub ipv6 {
     my ($self) = @_;
     #
@@ -218,7 +218,7 @@ sub ipv6 {
 Returns the decoded IPvI<future> (as per the spec) when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub ipvx {
     my ($self) = @_;
     #
@@ -232,7 +232,7 @@ sub ipvx {
 Returns the IPv6 Zone Id, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub zone {
     my ($self) = @_;
     #
@@ -246,7 +246,7 @@ sub zone {
 Returns the port, or undef.
 
 =cut
-    
+
 sub port {
     my ($self) = @_;
     #
@@ -260,7 +260,7 @@ sub port {
 Returns the path, or the empty string. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub path {
     my ($self, $type) = @_;
 
@@ -272,7 +272,7 @@ sub path {
 Returns the path segments as an array reference, which may be empty. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub segments {
     my ($self, $type) = @_;
 
@@ -284,7 +284,7 @@ sub segments {
 Returns the query, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub query {
     my ($self, $type) = @_;
 
@@ -296,7 +296,7 @@ sub query {
 Returns the fragment, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub fragment {
     my ($self, $type) = @_;
 
@@ -343,26 +343,30 @@ sub base {
 
 =head2 $self->normalized
 
-Returns a instance where the origin is the normalised version of C<$self>.
+Returns the normalized string of C<$self>.
+
+Equivalent to C<$self->string('normalized')>.
 
 =cut
 
 sub normalized {
   my ($self) = @_;
 
-  return ref($self)->new(_origin => $self->string('normalized'))
+  return $self->string('normalized')
 }
 
 =head2 $self->decoded
 
-Returns a instance where the origin is the decoded version of C<$self>.
+Returns the decoded string of C<$self>.
+
+Equivalent to C<$self->string('decoded')>.
 
 =cut
 
 sub decoded {
   my ($self) = @_;
 
-  return ref($self)->new(_origin => $self->string('decoded'))
+  return $self->string('decoded')
 }
 
 =head2 $self->resolve($base, $strict)
@@ -575,7 +579,7 @@ sub remove_dot_segments {
         $output .= $1;
         # printf "%s %-20s %-20s\n", 'E', $output, $input;
     }
-    
+
     # 3.  Finally, the output buffer is returned as the result of
     #     remove_dot_segments.
     return $output

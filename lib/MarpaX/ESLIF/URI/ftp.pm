@@ -68,7 +68,7 @@ sub grammar {
 Returns the user, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub user {
     my ($self, $type) = @_;
 
@@ -80,7 +80,7 @@ sub user {
 Returns the password, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub password {
     my ($self, $type) = @_;
 

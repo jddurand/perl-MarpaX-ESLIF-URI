@@ -61,7 +61,7 @@ sub grammar {
 Returns the drive, or undef.
 
 =cut
-    
+
 sub drive {
     my ($self) = @_;
     #

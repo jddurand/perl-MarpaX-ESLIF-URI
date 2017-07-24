@@ -60,7 +60,7 @@ sub grammar {
 Returns the address, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
-    
+
 sub address {
     my ($self, $type) = @_;
 
