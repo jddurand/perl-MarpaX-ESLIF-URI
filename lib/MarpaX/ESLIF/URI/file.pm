@@ -109,7 +109,7 @@ __DATA__
                    |             <file absolute> rank => 1
                    | <unc authority> <path absolute>
 
-<local path>     ::= <drive letter> <path absolute>
+<local path>     ::= <drive letter> <path absolute>                action => _action_path
                    |                <path absolute>
                    |                <file absolute>
 
@@ -127,8 +127,8 @@ __DATA__
 
 <drive>          ::= ALPHA                                         action => _action_drive
 
-<drive letter>   ::= <drive> ":"
-                   | <drive> "|"
+<drive letter>   ::= <drive> ":"                                   action => __segment
+                   | <drive> "|"                                   action => __segment
 
 <file auth>      ::= <userinfo> "@" <host>                         action => _action_authority
                    |                <host>                         action => _action_authority
