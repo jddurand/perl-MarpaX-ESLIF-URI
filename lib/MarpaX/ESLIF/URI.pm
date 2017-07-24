@@ -25,9 +25,9 @@ sub new {
   
   my $self;
   $str = "$str";
-  if ($str =~ /^($re_scheme):/) {
+  if ($str =~ /^($re_scheme):/o) {
       $scheme = $1
-  } elsif (defined($scheme) && ($scheme =~ /^$re_scheme$/)) {
+  } elsif (defined($scheme) && ($scheme =~ /^$re_scheme$/o)) {
       $str = "$scheme:$str"
   }
 
