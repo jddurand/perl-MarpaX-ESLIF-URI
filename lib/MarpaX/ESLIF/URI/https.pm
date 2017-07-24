@@ -22,10 +22,11 @@ extends 'MarpaX::ESLIF::URI::_generic';
 #
 my $BNF = do { local $/; <DATA> };
 my $GRAMMAR = MarpaX::ESLIF::Grammar->new(__PACKAGE__->eslif, __PACKAGE__->bnf);
-my $PORT;
+my $DEFAULT_PORT;
 BEGIN {
     my $s = getservbyname('https');
-    $PORT = $s->port || 443
+    $DEFAULT_PORT = $s->port if $s;
+    $DEFAULT_PORT //= 443
 }
 
 =head1 SUBROUTINES/METHODS
@@ -66,7 +67,7 @@ around _set__authority => sub {
     # form is to omit the port subcomponent
     #
     my $port = $self->port;
-    if (! defined($port) || ($port eq '') || ($port == $PORT)) {
+    if (! defined($port) || ($port eq '') || ($port == $DEFAULT_PORT)) {
         my $new_port = $self->_port;
         $new_port->{normalized} = undef;
         $self->_set__port($new_port);
@@ -86,6 +87,10 @@ around _set__path => sub {
     }
     $self->$orig($value)
 };
+
+=head1 NOTES
+
+The default https port is the one configured on caller's system, or 443.
 
 =head1 SEE ALSO
 

@@ -29,10 +29,11 @@ __PACKAGE__->_generate_actions(qw/_user _password/);
 #
 my $BNF = do { local $/; <DATA> };
 my $GRAMMAR = MarpaX::ESLIF::Grammar->new(__PACKAGE__->eslif, __PACKAGE__->bnf);
-my $PORT;
+my $DEFAULT_PORT;
 BEGIN {
     my $s = getservbyname('ftp');
-    $PORT = $s->port || 20
+    $DEFAULT_PORT = $s->port if $s;
+    $DEFAULT_PORT //= 20
 }
 
 =head1 SUBROUTINES/METHODS
@@ -97,7 +98,7 @@ around _set__authority => sub {
     # form is to omit the port subcomponent
     #
     my $port = $self->port;
-    if (! defined($port) || ($port eq '') || ($port == $PORT)) {
+    if (! defined($port) || ($port eq '') || ($port == $DEFAULT_PORT)) {
         my $new_port = $self->_port;
         $new_port->{normalized} = undef;
         $self->_set__port($new_port);
@@ -108,7 +109,13 @@ around _set__authority => sub {
 
 =head1 NOTES
 
-The eventual FTP type is left as part of the last segment of C<path>.
+=over
+
+=item The eventual ftp type is left as part of the last segment of C<path>.
+
+=item The default ftp port is the one configured on caller's system, or 20.
+
+=back
 
 =head1 SEE ALSO
 
