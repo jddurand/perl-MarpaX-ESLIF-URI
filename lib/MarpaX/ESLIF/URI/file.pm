@@ -56,18 +56,16 @@ sub grammar {
   return $GRAMMAR;
 }
 
-=head2 $self->drive
+=head2 $self->drive($type)
 
-Returns the drive, or undef.
+Returns the drive, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
 sub drive {
-    my ($self) = @_;
-    #
-    # drive never have a percent encoded character
-    #
-    return $self->_generic_getter('_drive')
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_drive', $type)
 }
 
 # -------------
