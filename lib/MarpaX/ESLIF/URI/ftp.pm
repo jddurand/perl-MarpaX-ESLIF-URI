@@ -10,7 +10,9 @@ package MarpaX::ESLIF::URI::ftp;
 # VERSION
 
 use Class::Tiny::Antlers;
+use Class::Method::Modifiers qw/around/;
 use MarpaX::ESLIF;
+use Net::servent qw/getservbyname/;
 
 extends 'MarpaX::ESLIF::URI::_generic';
 
@@ -27,6 +29,11 @@ __PACKAGE__->_generate_actions(qw/_user _password/);
 #
 my $BNF = do { local $/; <DATA> };
 my $GRAMMAR = MarpaX::ESLIF::Grammar->new(__PACKAGE__->eslif, __PACKAGE__->bnf);
+my $PORT;
+BEGIN {
+    my $s = getservbyname('ftp');
+    $PORT = $s->port || 20
+}
 
 =head1 SUBROUTINES/METHODS
 
@@ -83,6 +90,21 @@ sub password {
 # -------------
 # Normalization
 # -------------
+around _set__authority => sub {
+    my ($orig, $self, $value) = @_;
+    #
+    # If the port is equal to the default port for a scheme, the normal
+    # form is to omit the port subcomponent
+    #
+    my $port = $self->port;
+    if (! defined($port) || ($port eq '') || ($port == $PORT)) {
+        my $new_port = $self->_port;
+        $new_port->{normalized} = undef;
+        $self->_set__port($new_port);
+        $value->{normalized} =~ s/:[^:]*//
+    }
+    $self->$orig($value)
+};
 
 =head1 NOTES
 
