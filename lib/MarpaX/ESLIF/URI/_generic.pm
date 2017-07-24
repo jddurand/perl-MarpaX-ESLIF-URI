@@ -56,6 +56,14 @@ Instantiate a new object, or croak on failure. Takes as parameter an URI that wi
 
 =cut
 
+sub BUILDARGS {
+  my ($class, @args) = @_;
+
+  croak "Usage: $class->new(\$uri)" unless $#args == 0;
+
+  return { _origin => $args[0] }
+}
+
 sub BUILD {
     my ($self) = @_;
 
@@ -337,7 +345,7 @@ sub base {
     my $fragment = $self->fragment('origin');
     my $quote_fragment = quotemeta($fragment);
     $origin =~ s/#$quote_fragment$//;
-    return ref($self)->new(_origin => $origin)
+    return ref($self)->new($origin)
   }
 }
 
@@ -489,7 +497,7 @@ Returns a clone of current instance.
 sub clone {
     my ($self) = @_;
 
-    return ref($self)->new($self)
+    return ref($self)->new($self->_origin)
 }
 
 =head2 $self->as_string

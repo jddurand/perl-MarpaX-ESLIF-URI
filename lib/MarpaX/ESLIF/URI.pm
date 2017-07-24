@@ -36,12 +36,12 @@ sub new {
       # If defined, $scheme is guaranteed to contain only ASCII characters
       #
       my $lc_scheme = lc($scheme);
-      $self = eval { load_class("MarpaX::ESLIF::URI::$lc_scheme")->new(_origin => $str) }
+      $self = eval { load_class("MarpaX::ESLIF::URI::$lc_scheme")->new($str) }
   }
   #
   # Fallback to _generic
   #
-  $self //= MarpaX::ESLIF::URI::_generic->new(_origin => $str)
+  $self //= MarpaX::ESLIF::URI::_generic->new($str)
 }
 
 =head1 NOTES
