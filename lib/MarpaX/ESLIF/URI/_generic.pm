@@ -699,7 +699,7 @@ sub __pct_encoded {
     # to an unreserved character, as described in Section 2.3:
     # unreserved  = ALPHA / DIGIT / "-" / "." / "_" / "~"
     # else it should be normalized to uppercase.
-    # 
+    #
     my $normalized = ($decoded =~ /[A-Za-z0-9\-._~]/) ? $decoded : uc($origin);
     return { origin => $origin, decoded => $decoded, normalized => $normalized }
 }
