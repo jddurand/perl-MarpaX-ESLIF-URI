@@ -13,6 +13,7 @@ use Carp qw/croak/;
 use Class::Tiny::Antlers;
 use Class::Method::Modifiers qw/around/;
 use MarpaX::ESLIF;
+use Net::servent qw/getservbyname/;
 
 extends 'MarpaX::ESLIF::URI::_generic';
 
@@ -21,6 +22,11 @@ extends 'MarpaX::ESLIF::URI::_generic';
 #
 my $BNF = do { local $/; <DATA> };
 my $GRAMMAR = MarpaX::ESLIF::Grammar->new(__PACKAGE__->eslif, __PACKAGE__->bnf);
+my $PORT;
+BEGIN {
+    my $s = getservbyname('https');
+    $PORT = $s->port || 443
+}
 
 =head1 SUBROUTINES/METHODS
 
@@ -60,11 +66,11 @@ around _set__authority => sub {
     # form is to omit the port subcomponent
     #
     my $port = $self->port;
-    if (defined($port) && ($port == 80)) {
+    if (! defined($port) || ($port eq '') || ($port == $PORT)) {
         my $new_port = $self->_port;
         $new_port->{normalized} = undef;
         $self->_set__port($new_port);
-        $value->{normalized} =~ s/:[^:]+//
+        $value->{normalized} =~ s/:[^:]*//
     }
     $self->$orig($value)
 };
