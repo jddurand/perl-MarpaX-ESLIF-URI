@@ -74,8 +74,8 @@ sub inspect {
     my ($self) = @_;
 
     local %Data::Scan::Printer::Option = (with_ansicolor => 0);
-    my @methods = qw/string decoded normalized scheme authority host ip ipv4 ipv6 ipvx zone port path segments query fragment drive user password address is_abs/;
-    my @_methods = qw/_string _scheme _authority _host _ip _ipv4 _ipv6 _ipvx _zone _port _path _segments _query _fragment _drive _user _password _address/;
+    my @methods = qw/string decoded normalized scheme authority host ip ipv4 ipv6 ipvx zone port path segments query fragment drive user password is_abs to headers/;
+    my @_methods = qw/_string _scheme _authority _host _ip _ipv4 _ipv6 _ipvx _zone _port _path _segments _query _fragment _drive _user _password _to _headers/;
 
     # dspp($self); print "\n";
     $log->infof($format, 'Type', ref($self));

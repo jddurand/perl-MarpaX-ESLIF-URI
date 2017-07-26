@@ -14,14 +14,8 @@ use MarpaX::ESLIF;
 
 extends 'MarpaX::ESLIF::URI::_generic';
 
-has '_to'        => (is => 'rwp' );
-has '_addresses' => (is => 'rwp', default => sub { [] } );
+has '_to'        => (is => 'rwp', default => sub { {} } );
 has '_headers'   => (is => 'rwp', default => sub { {} } );
-
-#
-# Inherited method
-#
-__PACKAGE__->_generate_actions(qw/_address _domain _local/);
 
 #
 # Constants
@@ -57,53 +51,51 @@ sub grammar {
   return $GRAMMAR;
 }
 
-=head2 $self->address($type)
+=head2 $self->to($type)
 
-Returns the address. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+Returns the addresses. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
-sub address {
+sub to {
     my ($self, $type) = @_;
 
-    return $self->_generic_getter('_address', $type)
+    return $self->_generic_getter('_to', $type)
 }
 
-=head2 $self->domain($type)
+=head2 $self->headers($type)
 
-Returns the domain. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
-
-=cut
-
-sub domain {
-    my ($self, $type) = @_;
-
-    return $self->_generic_getter('_domain', $type)
-}
-
-=head2 $self->local($type)
-
-Returns the local part. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+Returns the headers. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
-sub local {
+sub headers {
     my ($self, $type) = @_;
 
-    return $self->_generic_getter('_local', $type)
+    return $self->_generic_getter('_headers', $type)
 }
 
 # ------------------------
 # Specific grammar actions
 # ------------------------
-sub __hfield {
-  my ($self, $hfname, $hfvalue) = @_;
+sub __to {
+    my ($self, @args) = @_;
 
-  foreach my $type (qw/decoded origin normalized/) {
-    push(@{$self->headers->{$type}}, { $hfname->{$type} = $hfvalue->{$type} })
-  }
+    my $concat = $self->__concat(@args);
+    push(@{$self->_to->{origin}},     $concat->{origin});
+    push(@{$self->_to->{decoded}},    $concat->{decoded});
+    push(@{$self->_to->{normalized}}, $concat->{normalized});
+    return $concat
+}
 
-  return { map { $_ => join('', $self->headers->{$_}) } qw/decoded origin normalized/ }
+sub __header {
+    my ($self, @args) = @_;
+
+    my $concat = $self->__concat(@args);
+    push(@{$self->_headers->{origin}},     $concat->{origin});
+    push(@{$self->_headers->{decoded}},    $concat->{decoded});
+    push(@{$self->_headers->{normalized}}, $concat->{normalized});
+    return $concat
 }
 
 # -------------
@@ -136,11 +128,11 @@ __DATA__
 <mailto query>            ::= <hfield>+ separator => '&'                                        action => _action_query
 <hfields>                 ::= "?" <mailto query>
 
-<hfield>                  ::= <hfname> "=" <hfvalue>                                            action => __hfield
+<hfield>                  ::= <hfname> "=" <hfvalue>                                            action => __header
 <hfname>                  ::= <qchar>*
 <hfvalue>                 ::= <qchar>*
 
-<addr spec>               ::= <local part> "@" <domain>
+<addr spec>               ::= <local part> "@" <domain>                                         action => __to
 <local part>              ::= <dot atom text>
                             | <quoted string>
 
@@ -160,7 +152,28 @@ __DATA__
 <dot atom text>           ::= <dot atom text unit>+ separator => "."
 <atext>                   ::= <ALPHA>
                             | <DIGIT>
-                            | [!#$%&'*+\-/=?^_`{|}~]
+                            | [!$'*+\-^_`{|}~]
+                            | <atext pct encoded>
+#
+# A number of characters that can appear in <addr-spec> MUST be
+# percent-encoded.  These are the characters that cannot appear in
+# a URI according to [STD66] as well as "%" (because it is used for
+# percent-encoding) and all the characters in gen-delims except "@"
+# and ":" (i.e., "/", "?", "#", "[", and "]").  Of the characters
+# in sub-delims, at least the following also have to be percent-
+# encoded: "&", ";", and "=".  Care has to be taken both when
+# encoding as well as when decoding to make sure these operations
+# are applied only once.
+#
+<atext pct encoded>       ::= "%" '2' '5'                                          action => __pct_encoded # %
+                            | "%" '2' 'F'                                          action => __pct_encoded # /
+                            | "%" '3' 'F'                                          action => __pct_encoded # ?
+                            | "%" '2' '3'                                          action => __pct_encoded # #
+                            | "%" '5' 'B'                                          action => __pct_encoded # [
+                            | "%" '5' 'D'                                          action => __pct_encoded # ]
+                            | "%" '2' '6'                                          action => __pct_encoded # &
+                            | "%" '3' 'B'                                          action => __pct_encoded # ;
+                            | "%" '3' 'D'                                          action => __pct_encoded # =
 <quoted string char>      ::=       <qcontent>
                             | <FWS> <qcontent>
 <quoted string interior>  ::= <quoted string char>*
