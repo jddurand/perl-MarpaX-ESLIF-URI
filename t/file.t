@@ -82,7 +82,7 @@ foreach my $origin (sort keys %DATA) {
     foreach my $type (keys %{$methods->{$method}}) {
       my $got = $uri->$method($type);
       my $expected = $methods->{$method}->{$type};
-      my $test_name = "MarpaX::ESLIF::URI->new('$uri')->$method('$type')";
+      my $test_name = "MarpaX::ESLIF::URI->new('$origin')->$method('$type')";
       if (ref($expected)) {
         eq_or_diff($got, $expected, $test_name);
       } else {
