@@ -82,20 +82,43 @@ sub __to {
     my ($self, @args) = @_;
 
     my $concat = $self->__concat(@args);
-    push(@{$self->_to->{origin}},     $concat->{origin});
-    push(@{$self->_to->{decoded}},    $concat->{decoded});
-    push(@{$self->_to->{normalized}}, $concat->{normalized});
+
+    foreach my $type (qw/origin decoded normalized/) {
+      $self->_to->{$type} //= [];
+      foreach my $addr (@args) {
+        push(@{$self->_to->{$type}}, $addr->{$type})
+      }
+    }
+    #
+    # <to> is also the <path> from generic URI point of view
+    #
+    $self->_action_path(@args);
     return $concat
 }
 
 sub __header {
-    my ($self, @args) = @_;
+    my ($self, $hfname, $equal, $hfvalue) = @_;
 
-    my $concat = $self->__concat(@args);
-    push(@{$self->_headers->{origin}},     $concat->{origin});
-    push(@{$self->_headers->{decoded}},    $concat->{decoded});
-    push(@{$self->_headers->{normalized}}, $concat->{normalized});
+    my $concat = $self->__concat($hfname, $equal, $hfvalue);
+
+    foreach my $type (qw/origin decoded normalized/) {
+      $self->_headers->{$type} //= [];
+      push(@{$self->_headers->{$type}}, { $hfname->{$type} => $hfvalue->{$type} })
+    }
+
     return $concat
+}
+
+sub __hfname {
+  my ($self, @args) = @_;
+
+  #
+  # <hfname> is case-insensitive. Since it may contain percent encoded characters that
+  # are normalized to uppercase, we have to apply uppercase in normalization.
+  #
+  my $rc = $self->__concat(@args);
+  $rc->{normalized} = uc($rc->{normalized});
+  $rc
 }
 
 # -------------
@@ -114,7 +137,9 @@ __DATA__
 #
 # Reference: https://tools.ietf.org/html/rfc6068#section-2
 #
-<mailto URI>              ::= <mailto scheme> ":" <mailto hier part>                            action => _action_string # No fragment
+# Note that <URI fragment> should not be used, still it is allowed
+#
+<mailto URI>              ::= <mailto scheme> ":" <mailto hier part> <URI fragment>             action => _action_string
 
 <mailto scheme>           ::= "mailto":i                                                        action => _action_scheme
 
@@ -129,7 +154,7 @@ __DATA__
 <hfields>                 ::= "?" <mailto query>
 
 <hfield>                  ::= <hfname> "=" <hfvalue>                                            action => __header
-<hfname>                  ::= <qchar>*
+<hfname>                  ::= <qchar>*                                                          action => __hfname
 <hfvalue>                 ::= <qchar>*
 
 <addr spec>               ::= <local part> "@" <domain>                                         action => __to
@@ -143,7 +168,8 @@ __DATA__
 <qchar>                   ::= <unreserved>
                             | <pct encoded>
                             | <some delims>
-<some delims>             ::= [!$'()*+,;:@]
+                            | <qchar pct encoded>
+<some delims>             ::= [!$'()*+,:@]
 
 #
 # From https://tools.ietf.org/html/rfc5322#section-3.2.3
@@ -174,6 +200,14 @@ __DATA__
                             | "%" '2' '6'                                          action => __pct_encoded # &
                             | "%" '3' 'B'                                          action => __pct_encoded # ;
                             | "%" '3' 'D'                                          action => __pct_encoded # =
+#
+# <hfname> and <hfvalue> are encodings of an [RFC5322] header field
+# name and value, respectively.  Percent-encoding is needed for the
+# same characters as listed above for <addr-spec>.
+# Though a domain does not accept all characters than a atext: only the ';'
+# must have an explicite rule, all others are handled by <pct encoded>
+<qchar pct encoded>       ::= "%" '3' 'B'                                          action => __pct_encoded # ;
+
 <quoted string char>      ::=       <qcontent>
                             | <FWS> <qcontent>
 <quoted string interior>  ::= <quoted string char>*
@@ -199,7 +233,7 @@ __DATA__
                             | <obs FWS>
 <CFWS comment>            ::=       <comment>
                             | <FWS> <comment>
-<CFWS comment many>       ::=       <comment>
+<CFWS comment many>       ::=       <CFWS comment>+
 <CFWS>                    ::= <CFWS comment many>
                             | <CFWS comment many> <FWS>
                             | <FWS>
@@ -211,7 +245,8 @@ __DATA__
 <comment>                 ::= "(" <comment interior> ")"
 <ccontent>                ::= <ctext>
                             | <quoted pair>
-                            | <comment>
+# <addr-spec> is a mail address as specified in [RFC5322], but excluding <comment> from [RFC5322]
+#                            | <comment>
 <ctext>                   ::= [\x{21}-\x{27}\x{2A}-\x{5B}\x{5D}-\x{7E}]
                             | <obs ctext>
 <obs ctext>               ::= <obs NO WS CTL>

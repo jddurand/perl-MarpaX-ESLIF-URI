@@ -9,6 +9,7 @@ use Log::Any qw/$log/;
 use MarpaX::ESLIF::URI;
 use Data::Scan::Printer;
 use Devel::Peek;
+use File::Slurp qw/read_file/;
 
 autoflush STDOUT 1;
 autoflush STDERR 1;
@@ -31,11 +32,24 @@ my $format  = '%-21s : %s';
 while (@ARGV) {
 
   my $self;
+  my $arg = shift @ARGV;
+
+  #
+  # We hack by saying that if the STRING start with '<' it is a file
+  #
+  if ($arg =~ /^<(.+)\z/) {
+    $arg = read_file($1);
+    #
+    # Probability to have an automatic and unwanted EOL is high
+    # when using a file in input
+    #
+    $arg =~ s/\s*\z//;
+  }
   $log->info('----------------------------------------');
   $log->info('Argument test');
   $log->info('----------------------------------------');
   eval {
-      $self = MarpaX::ESLIF::URI->new(shift @ARGV);
+      $self = MarpaX::ESLIF::URI->new($arg);
       inspect($self);
   };
   $log->errorf('%s', $@) if $@;
