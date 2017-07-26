@@ -101,17 +101,17 @@ __DATA__
                    | <local path>
 
 #
-# <auth path> is generating ambiguity
+# <file absolute> is generating ambiguity
 #
 <auth path>      ::= <file auth> <path absolute>
                    |             <path absolute>
-                   | <file auth> <file absolute> rank => 1
-                   |             <file absolute> rank => 1
+                   | <file auth> <file absolute>         rank => 1
+                   |             <file absolute>         rank => 1
                    | <unc authority> <path absolute>
 
 <local path>     ::= <drive letter> <path absolute>                action => _action_path
                    |                <path absolute>
-                   |                <file absolute>
+                   |                <file absolute>      rank => 1
 
 <unc authority>  ::= "//" <file host>                              action => _action_authority
                    | "///" <file host>                             action => _action_authority
@@ -123,7 +123,7 @@ __DATA__
 <inline IP>      ::= "%5B" <IPv6address> "%5D"
                    | "%5B" <IPvFuture> "%5D"
 
-<file absolute>  ::= "/" <drive letter> <path absolute>
+<file absolute>  ::= "/" <drive letter> <path absolute>            action => _action_path
 
 <drive>          ::= ALPHA                                         action => _action_drive
 
