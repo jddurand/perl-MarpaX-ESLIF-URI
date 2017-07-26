@@ -2,6 +2,13 @@ use strict;
 use warnings FATAL => 'all';
 
 package MarpaX::ESLIF::URI::_generic::RecognizerInterface;
+
+# VERSION
+
+# AUTHORITY
+
+# ABSTRACT: MarpaX::ESLIF's URI Recognizer Interface
+
 #
 # Optimized constructor
 #

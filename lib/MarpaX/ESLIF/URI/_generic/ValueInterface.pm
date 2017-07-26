@@ -4,6 +4,13 @@ use warnings FATAL => 'all';
 # This package is built with performance in minde, so this is old-style
 #
 package MarpaX::ESLIF::URI::_generic::ValueInterface;
+
+# VERSION
+
+# AUTHORITY
+
+# ABSTRACT: MarpaX::ESLIF's URI Value Interface
+
 use Carp qw/croak/;
 use vars qw/$AUTOLOAD/;
 use Class::Method::Modifiers qw/fresh/;
