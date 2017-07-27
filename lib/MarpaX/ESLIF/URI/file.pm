@@ -13,6 +13,7 @@ use Class::Tiny::Antlers;
 use Class::Method::Modifiers qw/around/;
 use IO::Socket;
 use MarpaX::ESLIF;
+use Net::Domain qw/hostfqdn/;
 use Net::DNS;
 use Socket qw/:addrinfo SOCK_RAW NI_NUMERICHOST/;  # Will work with perl >= 5.14
 
@@ -80,11 +81,13 @@ Returns a true value if the URI refers to a local path, else a false value.
 sub is_localpath {
     my ($self) = @_;
 
-    my $host = $self->host('normalized');
+    my $authority = $self->authority('normalized') // '';
+    my $host = $self->host('normalized') // '';
+    my $ip = $self->ip('normalized') // '';
     #
     # A file URI is considered "local" if it has no "file-auth"
     #
-    return 1 unless $host;
+    return 1 unless $authority;
     #
     # .. or the "file-auth" is the special string "localhost"
     #
@@ -94,7 +97,7 @@ sub is_localpath {
     # machine from which the URI is being interpreted (Section 2).
     #
     my @resolv_localhost = $self->_resolv('localhost');
-    my @resolv_host = $self->_resolv($host);
+    my @resolv_host = $self->_resolv($host, $ip);
 
     return 0;
 }
@@ -116,44 +119,52 @@ around _set__drive => sub {
 # Internals
 # ---------
 sub _resolv {
-    my ($self, $hostname) = @_;
+    my ($self, $hostname, $ipaddr) = @_;
 
     my @rc = ();
+    return @rc unless $hostname || $ipaddr;
 
     #
     # 1. Try with Socket's getaddrinfo/getnameinfo first
     #
     print STDERR "===========> [getaddrinfo] $hostname ?\n";
-    my ($err, @res) = getaddrinfo($hostname, "", { socktype => SOCK_RAW });
-    if ($err) {
-        print STDERR "............ [getaddrinfo] Cannot getaddrinfo $hostname, $err\n";
-        return '';
-    }
-    foreach my $ai (@res) {
-        my ($err, $ipaddr) = getnameinfo($ai->{'addr'}, NI_NUMERICHOST, NIx_NOSERV);
-        if ($err) {
-            print STDERR "............ [getaddrinfo] Cannot getnameinfo " . $ai->{'addr'} . ", $err\n";
-            next;
-        }
-        print STDERR "............ [getaddrinfo] Got $ipaddr\n";
+    my ($err, @res);
+    if ($ipaddr) {
         push(@rc, $ipaddr);
+    } else {
+        ($err, @res) = getaddrinfo($hostname, "", { socktype => SOCK_RAW });
+        if ($err) {
+            print STDERR "............ [getaddrinfo] Cannot getaddrinfo $hostname, $err\n";
+        } else {
+            foreach my $ai (@res) {
+                my ($err, $ipaddr) = getnameinfo($ai->{'addr'}, NI_NUMERICHOST, NIx_NOSERV);
+                if ($err) {
+                    print STDERR "............ [getaddrinfo] Cannot getnameinfo " . $ai->{'addr'} . ", $err\n";
+                    next;
+                }
+                print STDERR "............ [getaddrinfo] Got $ipaddr\n";
+                push(@rc, $ipaddr);
+            }
+        }
     }
     # return @rc if @rc;
     #
     # 2. Try with Net::DNS
     #
-    print STDERR "............ [Net::DNS::Resolver] $hostname ?\n";
-    my $res = Net::DNS::Resolver->new;
-    my $query = $res->search($hostname);
-    if ($query) {
-        foreach my $rr ($query->answer) {
-            next unless $rr->type eq "A";
-            my $ipaddr = $rr->address;
-            print STDERR "............ [Net::DNS::Resolver] Got $ipaddr\n";
-            push(@rc, $ipaddr);
+    if ($hostname) {
+        print STDERR "............ [Net::DNS::Resolver] $hostname ?\n";
+        my $res = Net::DNS::Resolver->new;
+        my $query = $res->search($hostname);
+        if ($query) {
+            foreach my $rr ($query->answer) {
+                next unless $rr->type eq "A";
+                my $ipaddr = $rr->address;
+                print STDERR "............ [Net::DNS::Resolver] Got $ipaddr\n";
+                push(@rc, $ipaddr);
+            }
+        } else {
+            print STDERR "............ [Net::DNS::Resolver] Cannot resolv " . $res->errorstring . "\n";
         }
-    } else {
-        print STDERR "............ [Net::DNS::Resolver] Cannot resolv " . $res->errorstring . "\n";
     }
     return @rc;
 }
