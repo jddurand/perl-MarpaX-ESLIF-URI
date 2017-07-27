@@ -76,17 +76,17 @@ my %DATA =
 
 foreach my $origin (sort keys %DATA) {
   my $uri = MarpaX::ESLIF::URI->new($origin);
-  isa_ok($uri, 'MarpaX::ESLIF::URI::file', "MarpaX::ESLIF::URI->new('$origin')");
+  isa_ok($uri, 'MarpaX::ESLIF::URI::file', "MarpaX::ESLIF::URI->new('$origin') isa 'MarpaX::ESLIF::URI::file'");
   my $methods = $DATA{$uri};
-  foreach my $method (keys %{$methods}) {
-    foreach my $type (keys %{$methods->{$method}}) {
+  foreach my $method (sort keys %{$methods}) {
+    foreach my $type (sort keys %{$methods->{$method}}) {
       my $got = $uri->$method($type);
       my $expected = $methods->{$method}->{$type};
       my $test_name = "MarpaX::ESLIF::URI->new('$origin')->$method('$type')";
       if (ref($expected)) {
-        eq_or_diff($got, $expected, $test_name);
+        eq_or_diff($got, $expected, "$test_name is " . (ref($expected) eq 'ARRAY' ? "[" . join(", ", map { "'$_'" } @{$expected}) . "]" : "$expected"));
       } else {
-        is($got, $expected, $test_name);
+        is($got, $expected, "$test_name is '$expected'");
       }
     }
   }
