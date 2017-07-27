@@ -84,9 +84,9 @@ foreach my $origin (sort keys %DATA) {
       my $expected = $methods->{$method}->{$type};
       my $test_name = "\$uri->$method('$type')";
       if (ref($expected)) {
-        eq_or_diff($got, $expected, "$test_name is " . (ref($expected) eq 'ARRAY' ? "[" . join(", ", map { "'$_'" } @{$expected}) . "]" : "$expected"));
+        eq_or_diff($got, $expected, "$test_name is " . (defined($expected) ? (ref($expected) eq 'ARRAY' ? "[" . join(", ", map { "'$_'" } @{$expected}) . "]" : "$expected") : "undef"));
       } else {
-        is($got, $expected, "$test_name is '$expected'");
+        is($got, $expected, "$test_name is " . (defined($expected) ? "'$expected'" : "undef"));
       }
     }
   }
