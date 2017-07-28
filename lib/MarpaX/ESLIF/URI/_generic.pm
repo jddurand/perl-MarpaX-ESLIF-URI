@@ -745,12 +745,18 @@ sub __pct_encoded {
 #
 # Special for zone
 #
-sub __percent_character {
+sub __encoded_percent_character {
     #
     # '%' decoded character is not an unreserved character, so the
     # normalized form remains %25
     #
     return { origin => '%25', decoded => '%', normalized => '%25'}
+}
+sub __not_encoded_percent_character {
+    #
+    # Normalized form is forced to '%25'
+    #
+    return { origin => '%', decoded => '%', normalized => '%25'}
 }
 #
 # Pushes segments in a _segment[] array
@@ -879,7 +885,13 @@ __DATA__
 <IP literal>             ::= "[" <IP literal interior> "]"
 <ZoneID interior>        ::= <unreserved>  | <pct encoded>
 <ZoneID>                 ::= <ZoneID interior>+                                             action => _action_zone
-<IPv6addrz percent char> ::= "%25"                                                          action => __percent_character
+<IPv6addrz percent char> ::= "%25"                                                          action => __encoded_percent_character
+#
+# From https://tools.ietf.org/html/rfc6874#section-3:
+#
+# "we also suggest that URI parsers accept bare "%" signs when possible"
+#
+<IPv6addrz percent char> ::= "%"                                                            action => __not_encoded_percent_character
 <IPv6addrz>              ::= <IPv6address> <IPv6addrz percent char> <ZoneID>
 
 <IPvFuture>              ::= "v" <HEXDIG many> "." <IPvFuture trailer>                      action => _action_ipvx

@@ -57,6 +57,14 @@ my %DATA =
        ipv6      => { origin => "2001:db8:a0b:12f0::1",                 decoded => "2001:db8:a0b:12f0::1",                 normalized => "2001:db8:a0b:12f0::1" },
        zone      => { origin => "Eth0",                                 decoded => "Eth0",                                 normalized => "eth0" },
    },
+   "http://[2001:db8:a0b:12f0::1%Eth0]:80/index.html" => {
+       scheme    => { origin => "http",                                 decoded => "http",                                 normalized => "http" },
+       host      => { origin => "[2001:db8:a0b:12f0::1%Eth0]",          decoded => "[2001:db8:a0b:12f0::1%Eth0]",          normalized => "[2001:db8:a0b:12f0::1%25eth0]" },
+       path      => { origin => "/index.html",                          decoded => "/index.html",                          normalized => "/index.html" },
+       ip        => { origin => "2001:db8:a0b:12f0::1%Eth0",            decoded => "2001:db8:a0b:12f0::1%Eth0",            normalized => "2001:db8:a0b:12f0::1%25eth0" },
+       ipv6      => { origin => "2001:db8:a0b:12f0::1",                 decoded => "2001:db8:a0b:12f0::1",                 normalized => "2001:db8:a0b:12f0::1" },
+       zone      => { origin => "Eth0",                                 decoded => "Eth0",                                 normalized => "eth0" },
+   },
   );
 
 foreach my $origin (sort keys %DATA) {
