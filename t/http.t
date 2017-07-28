@@ -16,18 +16,18 @@ my %DATA =
    "http://example.com" => {
                               scheme    => { origin => "http",                                 decoded => "http",                                 normalized => "http" },
                               host      => { origin => "example.com",                          decoded => "example.com",                          normalized => "example.com" },
-                              path      => { origin => "/",                                    decoded => "/",                                    normalized => "/" },
+                              path      => { origin => "",                                     decoded => "",                                     normalized => "/" },
                              },
    "http://peehaa\@example.com" => {
                               scheme    => { origin => "http",                                 decoded => "http",                                 normalized => "http" },
                               host      => { origin => "example.com",                          decoded => "example.com",                          normalized => "example.com" },
-                              path      => { origin => "/",                                    decoded => "/",                                    normalized => "/" },
+                              path      => { origin => "",                                     decoded => "",                                     normalized => "/" },
                               userinfo  => { origin => "peehaa",                               decoded => "peehaa",                               normalized => "peehaa" },
                              },
    "http://peehaa:pass\@example.com" => {
                               scheme    => { origin => "http",                                 decoded => "http",                                 normalized => "http" },
                               host      => { origin => "example.com",                          decoded => "example.com",                          normalized => "example.com" },
-                              path      => { origin => "/",                                    decoded => "/",                                    normalized => "/" },
+                              path      => { origin => "",                                     decoded => "",                                     normalized => "/" },
                               userinfo  => { origin => "peehaa:pass",                          decoded => "peehaa:pass",                          normalized => "peehaa:pass" },
                              },
   );
