@@ -184,6 +184,8 @@ sub host {
 
 Returns the IP when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
+Note that this is the full concatenation of what makes an IP, in particular you will get the eventual IPv6 Zone Id if there is one.
+
 =cut
 
 sub ip {
