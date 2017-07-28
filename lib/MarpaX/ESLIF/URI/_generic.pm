@@ -130,18 +130,18 @@ sub string {
     return $self->_generic_getter('_string', $type)
 }
 
-=head2 $self->scheme
+=head2 $self->scheme($type)
 
-Returns the scheme, or undef.
+Returns the scheme, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
 sub scheme {
-    my ($self) = @_;
+    my ($self, $type) = @_;
     #
     # scheme never have a percent encoded character
     #
-    return $self->_generic_getter('_scheme')
+    return $self->_generic_getter('_scheme', $type)
 }
 
 =head2 $self->authority($type)
@@ -168,7 +168,7 @@ sub userinfo {
     return $self->_generic_getter('_userinfo', $type)
 }
 
-=head2 $self->host
+=head2 $self->host($type)
 
 Returns the host (which may contain C<[]> delimiters in case of Ipv6 literal), or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
@@ -180,74 +180,64 @@ sub host {
     return $self->_generic_getter('_host', $type)
 }
 
-=head2 $self->ip
+=head2 $self->ip($type)
 
 Returns the IP when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
 sub ip {
-    my ($self) = @_;
-    #
-    # ip never have a percent encoded character
-    #
-    return $self->_generic_getter('_ip')
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_ip', $type)
 }
 
-=head2 $self->ipv4
+=head2 $self->ipv4($type)
 
-Returns the IPv4 when host is such a literal, or undef.
+Returns the IPv4 when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
 sub ipv4 {
-    my ($self) = @_;
-    #
-    # ipv4 never have a percent encoded character
-    #
-    return $self->_generic_getter('_ipv4')
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_ipv4', $type)
 }
 
-=head2 $self->ipv6
+=head2 $self->ipv6($type)
 
 Returns the IPv6 when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
 sub ipv6 {
-    my ($self) = @_;
-    #
-    # ipv6 never have a percent encoded character
-    #
-    return $self->_generic_getter('_ipv6')
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_ipv6', $type)
 }
 
-=head2 $self->ipvx
+=head2 $self->ipvx($type)
 
 Returns the decoded IPvI<future> (as per the spec) when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
 sub ipvx {
-    my ($self) = @_;
-    #
-    # ipvx never have a percent encoded character
-    #
-    return $self->_generic_getter('_ipvx')
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_ipvx', $type)
 }
 
-=head2 $self->zone
+=head2 $self->zone($type)
 
 Returns the IPv6 Zone Id, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
 sub zone {
-    my ($self) = @_;
-    #
-    # zone never have a percent encoded character
-    #
-    return $self->_generic_getter('_zone')
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_zone', $type)
 }
 
 =head2 $self->port
@@ -258,13 +248,11 @@ Returns the port, or undef.
 
 sub port {
     my ($self) = @_;
-    #
-    # port never have a percent encoded character
-    #
+
     return $self->_generic_getter('_port')
 }
 
-=head2 $self->path
+=head2 $self->path($type)
 
 Returns the path, or the empty string. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
@@ -276,7 +264,7 @@ sub path {
     return $self->_generic_getter('_path', $type)
 }
 
-=head2 $self->segments
+=head2 $self->segments($type)
 
 Returns the path segments as an array reference, which may be empty. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
@@ -288,7 +276,7 @@ sub segments {
     return $self->_generic_getter('_segments', $type)
 }
 
-=head2 $self->query
+=head2 $self->query($type)
 
 Returns the query, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
@@ -300,7 +288,7 @@ sub query {
     return $self->_generic_getter('_query', $type)
 }
 
-=head2 $self->fragment
+=head2 $self->fragment($type)
 
 Returns the fragment, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
@@ -679,6 +667,46 @@ around _set__host => sub {
     $self->$orig($value)
 };
 
+around _set__ipv4 => sub {
+    my ($orig, $self, $value) = @_;
+
+    #
+    # IP is a host, and normalized host is case insensitive and should be lowercased
+    #
+    $value->{normalized} = lc($value->{normalized});
+    $self->$orig($value)
+};
+
+around _set__ipv6 => sub {
+    my ($orig, $self, $value) = @_;
+
+    #
+    # IP is a host, and normalized host is case insensitive and should be lowercased
+    #
+    $value->{normalized} = lc($value->{normalized});
+    $self->$orig($value)
+};
+
+around _set__ipvx => sub {
+    my ($orig, $self, $value) = @_;
+
+    #
+    # IP is a host, and normalized host is case insensitive and should be lowercased
+    #
+    $value->{normalized} = lc($value->{normalized});
+    $self->$orig($value)
+};
+
+around _set__zone => sub {
+    my ($orig, $self, $value) = @_;
+
+    #
+    # Zone is part of host, so a normalized zone is case insensitive and should be lowercased
+    #
+    $value->{normalized} = lc($value->{normalized});
+    $self->$orig($value)
+};
+
 around _set__path => sub {
     my ($orig, $self, $value) = @_;
     #
@@ -717,8 +745,8 @@ sub __pct_encoded {
 #
 sub __percent_character {
     #
-    # '%' decodedd character is not an unreserved character, so the
-    # normalizedized form remains %25
+    # '%' decoded character is not an unreserved character, so the
+    # normalized form remains %25
     #
     return { origin => '%25', decoded => '%', normalized => '%25'}
 }
