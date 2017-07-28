@@ -77,7 +77,7 @@ my %DATA =
 foreach my $origin (sort keys %DATA) {
   my $uri = MarpaX::ESLIF::URI->new($origin);
   isa_ok($uri, 'MarpaX::ESLIF::URI::file', "\$uri = MarpaX::ESLIF::URI->new('$origin')");
-  my $methods = $DATA{$uri};
+  my $methods = $DATA{$origin};
   foreach my $method (sort keys %{$methods}) {
     foreach my $type (sort keys %{$methods->{$method}}) {
       my $got = $uri->$method($type);
