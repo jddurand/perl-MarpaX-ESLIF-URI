@@ -200,6 +200,14 @@ __DATA__
                             | "%" '2' '6'                                          action => __pct_encoded # &
                             | "%" '3' 'B':i                                        action => __pct_encoded # ;
                             | "%" '3' 'D':i                                        action => __pct_encoded # =
+                            # %23, %25, %26, %2F are forced to be encoded
+                            | "%" '2' [0-247-9A-Ea-e]                              action => __pct_encoded
+                            # %3B, %3D, %3F are forced to be encoded
+                            | "%" '3' [0-9ACEace]                                  action => __pct_encoded
+                            # %5B, %5D are forced to be encoded
+                            | "%" '5' [0-9ACE-Face-f]                              action => __pct_encoded
+                            # All the rest
+                            | "%" [0-146-9A-Fa-f] [0-9A-Fa-f]                      action => __pct_encoded
 #
 # <hfname> and <hfvalue> are encodings of an [RFC5322] header field
 # name and value, respectively.  Percent-encoding is needed for the
