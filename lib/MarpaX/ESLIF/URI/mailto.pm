@@ -154,8 +154,8 @@ __DATA__
 <hfields>                 ::= "?" <mailto query>
 
 <hfield>                  ::= <hfname> "=" <hfvalue>                                            action => __header
-<hfname>                  ::= <qchar>*                                                          action => __hfname
-<hfvalue>                 ::= <qchar>*
+<hfname>                  ::= <hfname char>*                                                    action => __hfname
+<hfvalue>                 ::= <hfvalue char>*
 
 <addr spec>               ::= <local part> "@" <domain>                                         action => __to
 <local part>              ::= <dot atom text>
@@ -165,11 +165,14 @@ __DATA__
 <domain>                  ::= <dot atom text>
                             | "[" <dtext no obs any> "]"
 <dtext no obs>            ::= [\x{21}-\x{5A}\x{5E}-\x{7E}] # Printable US-ASCII or characters not including "[", "]", or "\"
-<qchar>                   ::= <unreserved>
-                            | <pct encoded>
-                            | <some delims>
-                            | <qchar pct encoded>
-<some delims>             ::= [!$'()*+,:@]
+<hfname char>             ::= <unreserved>
+                            | <hfname some delims>
+                            | <hfname pct encoded>
+<hfvalue char>            ::= <unreserved>
+                            | <hfvalue some delims>
+                            | <hfvalue pct encoded>
+<hfname some delims>      ::= [!$'()*+,@]
+<hfvalue some delims>     ::= [!$'()*+,:@] # hfname + ":"
 
 #
 # From https://tools.ietf.org/html/rfc5322#section-3.2.3
@@ -212,9 +215,45 @@ __DATA__
 # <hfname> and <hfvalue> are encodings of an [RFC5322] header field
 # name and value, respectively.  Percent-encoding is needed for the
 # same characters as listed above for <addr-spec>.
-# Though a domain does not accept all characters than a atext: only the ';'
-# must have an explicite rule, all others are handled by <pct encoded>
-<qchar pct encoded>       ::= "%" '3' 'B':i                                        action => __pct_encoded # ;
+#
+# Note that [RFC5322] allows all US-ASCII printable characters except ":" in
+# optional header field names (Section 3.6.8). Its % encoded form is "%" "3" "A":i
+#
+<hfname pct encoded>      ::= "%" '2' '5'                                          action => __pct_encoded # %
+                            | "%" '2' 'F':i                                        action => __pct_encoded # /
+                            | "%" '3' 'F':i                                        action => __pct_encoded # ?
+                            | "%" '2' '3'                                          action => __pct_encoded # #
+                            | "%" '5' 'B':i                                        action => __pct_encoded # [
+                            | "%" '5' 'D':i                                        action => __pct_encoded # ]
+                            | "%" '2' '6'                                          action => __pct_encoded # &
+                            | "%" '3' 'B':i                                        action => __pct_encoded # ;
+                            | "%" '3' 'D':i                                        action => __pct_encoded # =
+                            # %23, %25, %26, %2F are forced to be encoded
+                            | "%" '2' [0-247-9A-Ea-e]                              action => __pct_encoded
+                            # %3B, %3D, %3F are forced to be encoded,  %3A or %3a are excluded (character ":")
+                            | "%" '3' [0-9CEce]                                    action => __pct_encoded
+                            # %5B, %5D are forced to be encoded
+                            | "%" '5' [0-9ACE-Face-f]                              action => __pct_encoded
+                            # All the rest
+                            | "%" [0-146-9A-Fa-f] [0-9A-Fa-f]                      action => __pct_encoded
+
+<hfvalue pct encoded>     ::= "%" '2' '5'                                          action => __pct_encoded # %
+                            | "%" '2' 'F':i                                        action => __pct_encoded # /
+                            | "%" '3' 'F':i                                        action => __pct_encoded # ?
+                            | "%" '2' '3'                                          action => __pct_encoded # #
+                            | "%" '5' 'B':i                                        action => __pct_encoded # [
+                            | "%" '5' 'D':i                                        action => __pct_encoded # ]
+                            | "%" '2' '6'                                          action => __pct_encoded # &
+                            | "%" '3' 'B':i                                        action => __pct_encoded # ;
+                            | "%" '3' 'D':i                                        action => __pct_encoded # =
+                            # %23, %25, %26, %2F are forced to be encoded
+                            | "%" '2' [0-247-9A-Ea-e]                              action => __pct_encoded
+                            # %3B, %3D, %3F are forced to be encoded
+                            | "%" '3' [0-9ACEace]                                  action => __pct_encoded
+                            # %5B, %5D are forced to be encoded
+                            | "%" '5' [0-9ACE-Face-f]                              action => __pct_encoded
+                            # All the rest
+                            | "%" [0-146-9A-Fa-f] [0-9A-Fa-f]                      action => __pct_encoded
 
 <quoted string char>      ::=       <qcontent>
                             | <FWS> <qcontent>
