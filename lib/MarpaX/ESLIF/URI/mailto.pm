@@ -125,6 +125,10 @@ sub __hfname {
 # Normalization
 # -------------
 
+=head1 NOTES
+
+The characters C</> and C<?> has been added to mailto syntax
+
 =head1 SEE ALSO
 
 L<RFC6068|https://tools.ietf.org/html/rfc6068>, L<MarpaX::ESLIF::URI::_generic>
@@ -171,8 +175,8 @@ __DATA__
 <hfvalue char>            ::= <unreserved>
                             | <hfvalue some delims>
                             | <hfvalue pct encoded>
-<hfname some delims>      ::= [!$'()*+,@]
-<hfvalue some delims>     ::= [!$'()*+,:@] # hfname + ":"
+<hfname some delims>      ::= [!$'()*+,@/?]
+<hfvalue some delims>     ::= [!$'()*+,:@/?] # hfname + ":"
 
 #
 # From https://tools.ietf.org/html/rfc5322#section-3.2.3
