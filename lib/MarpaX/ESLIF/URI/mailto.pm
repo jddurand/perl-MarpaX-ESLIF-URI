@@ -192,21 +192,21 @@ __DATA__
 # are applied only once.
 #
 <atext pct encoded>       ::= "%" '2' '5'                                          action => __pct_encoded # %
-                            | "%" '2' 'F'                                          action => __pct_encoded # /
-                            | "%" '3' 'F'                                          action => __pct_encoded # ?
+                            | "%" '2' 'F':i                                        action => __pct_encoded # /
+                            | "%" '3' 'F':i                                        action => __pct_encoded # ?
                             | "%" '2' '3'                                          action => __pct_encoded # #
-                            | "%" '5' 'B'                                          action => __pct_encoded # [
-                            | "%" '5' 'D'                                          action => __pct_encoded # ]
+                            | "%" '5' 'B':i                                        action => __pct_encoded # [
+                            | "%" '5' 'D':i                                        action => __pct_encoded # ]
                             | "%" '2' '6'                                          action => __pct_encoded # &
-                            | "%" '3' 'B'                                          action => __pct_encoded # ;
-                            | "%" '3' 'D'                                          action => __pct_encoded # =
+                            | "%" '3' 'B':i                                        action => __pct_encoded # ;
+                            | "%" '3' 'D':i                                        action => __pct_encoded # =
 #
 # <hfname> and <hfvalue> are encodings of an [RFC5322] header field
 # name and value, respectively.  Percent-encoding is needed for the
 # same characters as listed above for <addr-spec>.
 # Though a domain does not accept all characters than a atext: only the ';'
 # must have an explicite rule, all others are handled by <pct encoded>
-<qchar pct encoded>       ::= "%" '3' 'B'                                          action => __pct_encoded # ;
+<qchar pct encoded>       ::= "%" '3' 'B':i                                        action => __pct_encoded # ;
 
 <quoted string char>      ::=       <qcontent>
                             | <FWS> <qcontent>
