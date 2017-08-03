@@ -314,7 +314,7 @@ sub is_abs {
   return defined($self->scheme) && ! defined($self->fragment)
 }
 
-=head2 $self->abs
+=head2 $self->base
 
 Returns a instance that is the absolute version of C<$self> if possible, or croak on failure.
 
