@@ -1,0 +1,42 @@
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+MarpaX::ESLIF::URI - URI as per RFC3986/RFC6874
+
+=head1 VERSION
+
+version 0.001
+
+=head2 $class->new($str, $scheme)
+
+Returns a instance that is a MarpaX::ESLIF::URI::$scheme representation of C<$str>, when C<$scheme> defaults to C<_generic> if there is no specific C<$scheme> implementation, or if the later fails.
+
+=head1 NOTES
+
+Percent-encoded characters are decoded to ASCII characters corresponding to every percent-encoded byte.
+
+=head1 SEE ALSO
+
+L<MarpaX::ESLIF::URI::_generic>, L<MarpaX::ESLIF::URI::_file>
+
+=head1 AUTHOR
+
+Jean-Damien Durand <jeandamiendurand@free.fr>
+
+=head1 CONTRIBUTOR
+
+=for stopwords Jean-Damien Durand
+
+Jean-Damien Durand <Jean-Damien.Durand@newaccess.ch>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2017 by Jean-Damien Durand.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
