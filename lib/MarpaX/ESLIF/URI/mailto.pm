@@ -30,7 +30,7 @@ my $GRAMMAR = MarpaX::ESLIF::Grammar->new(__PACKAGE__->eslif, __PACKAGE__->bnf);
 
 =head1 SUBROUTINES/METHODS
 
-MarpaX::ESLIF::URI::ftp inherits, and eventually overwrites some, methods or MarpaX::ESLIF::URI::_generic.
+MarpaX::ESLIF::URI::mailto inherits, and eventually overwrites some, methods or MarpaX::ESLIF::URI::_generic.
 
 =head2 $class->bnf
 
