@@ -606,10 +606,7 @@ sub _generate_actions {
   foreach my $attribute (@attributes) {
     my $method = "_action$attribute";
     next if $class->can($method);
-    my $stub = eval "sub {
-      my (\$self, \@args) = \@_;
-      \$self->_set_$attribute(\$self->__concat(\@args))
-    }" || croak "Failed to create action stub for attribute $attribute, $@";
+    my $stub = eval "sub { my (\$self, \@args) = \@_; \$self->_set_$attribute(\$self->__concat(\@args)) }" || croak "Failed to create action stub for attribute $attribute, $@"; ## no critic
     fresh $method => $stub;
   }
 }
