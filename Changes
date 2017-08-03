@@ -1,7 +1,11 @@
 Changelog for MarpaX-ESLIF-URI
 
-0.001 2017-08-03T02:25:39
+0.001 2017-08-03T02:46:23
  [Jean-Damien Durand]
+ - xtest
+ - base POD
+ - perlcritic
+ - Import
  - mailto dev+
  - / and ? added hfname and hfvalue
  - hfname and hfvalue restrictions

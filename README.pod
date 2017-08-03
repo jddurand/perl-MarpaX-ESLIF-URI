@@ -20,7 +20,7 @@ Percent-encoded characters are decoded to ASCII characters corresponding to ever
 
 =head1 SEE ALSO
 
-L<MarpaX::ESLIF::URI::_generic>, L<MarpaX::ESLIF::URI::_file>
+L<MarpaX::ESLIF::URI::_generic>
 
 =head1 AUTHOR
 
