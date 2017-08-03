@@ -25,7 +25,7 @@ sub new {
   my ($class, $str, $scheme) = @_;
 
   croak '$str must be defined' unless defined($str);
-  
+
   my $self;
   $str = "$str";
   if ($str =~ /^($re_scheme):/o) {

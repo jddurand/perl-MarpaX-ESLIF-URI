@@ -170,7 +170,7 @@ sub userinfo {
 
 =head2 $self->host($type)
 
-Returns the host (which may contain C<[]> delimiters in case of Ipv6 literal), or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+Returns the host (which may contain C<[]> delimiters in case of IPv6 literal), or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
