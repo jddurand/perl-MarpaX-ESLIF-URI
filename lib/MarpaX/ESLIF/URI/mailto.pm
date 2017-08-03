@@ -14,8 +14,13 @@ use MarpaX::ESLIF;
 
 extends 'MarpaX::ESLIF::URI::_generic';
 
-has '_to'        => (is => 'rwp', default => sub { {} } );
-has '_headers'   => (is => 'rwp', default => sub { {} } );
+has '_to'        => (is => 'rwp', default => sub { { origin => [], decoded => [], normalized => [] } });
+has '_headers'   => (is => 'rwp', default => sub { { origin => [], decoded => [], normalized => [] } });
+
+#
+# All attributes starting with an underscore are the result of parsing
+#
+__PACKAGE__->_generate_actions(qw/_to _headers/);
 
 #
 # Constants
@@ -53,7 +58,7 @@ sub grammar {
 
 =head2 $self->to($type)
 
-Returns the addresses. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+Returns the addresses as an array reference, that can be empty. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
@@ -65,7 +70,9 @@ sub to {
 
 =head2 $self->headers($type)
 
-Returns the headers. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+Returns the headers as an array reference of single hashes, that can be empty. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+There is no check of eventual duplicates, and it is reason why at every array indice, there is a hash reference where the key is a mailto header field, and the value is a mailto header value.
 
 =cut
 
@@ -81,22 +88,26 @@ sub headers {
 sub __to {
     my ($self, @args) = @_;
 
-    my $concat = $self->__concat(@args);
-
-    foreach my $type (qw/origin decoded normalized/) {
-      $self->_to->{$type} //= [];
-      foreach my $addr (@args) {
-        push(@{$self->_to->{$type}}, $addr->{$type})
-      }
-    }
     #
     # <to> is also the <path> from generic URI point of view
     #
     $self->_action_path(@args);
+
+    my $concat = $self->__concat(@args);
+
+    while (@args) {
+        my $addr = shift @args;
+        my $comma = shift @args;
+        foreach my $type (qw/origin decoded normalized/) {
+            $self->_to->{$type} //= [];
+            push(@{$self->_to->{$type}}, $addr->{$type})
+        }
+    }
+
     return $concat
 }
 
-sub __header {
+sub __hfield {
     my ($self, $hfname, $equal, $hfvalue) = @_;
 
     my $concat = $self->__concat($hfname, $equal, $hfvalue);
@@ -152,16 +163,16 @@ __DATA__
                             | <to>
                             | <to> <hfields>
 
-<to>                      ::= <addr spec>+ separator => ','                                     action => _action_path
+<to>                      ::= <addr spec>+ separator => ','                                     action => __to
 
 <mailto query>            ::= <hfield>+ separator => '&'                                        action => _action_query
 <hfields>                 ::= "?" <mailto query>
 
-<hfield>                  ::= <hfname> "=" <hfvalue>                                            action => __header
+<hfield>                  ::= <hfname> "=" <hfvalue>                                            action => __hfield
 <hfname>                  ::= <hfname char>*                                                    action => __hfname
 <hfvalue>                 ::= <hfvalue char>*
 
-<addr spec>               ::= <local part> "@" <domain>                                         action => __to
+<addr spec>               ::= <local part> "@" <domain>
 <local part>              ::= <dot atom text>
                             | <quoted string>
 

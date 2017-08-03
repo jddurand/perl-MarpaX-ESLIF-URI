@@ -13,18 +13,43 @@ my %DATA =
    #
    # Adapted from http://www.scottseverance.us/mailto.html
    #
-   "mailto:bogus\@email.com" => {
-       scheme    => { origin => "mailto",                               decoded => "mailto",                               normalized => "mailto" },
+   "mailto:bogus\@email.com,bogus2\@email.com" => {
+       scheme    => { origin => "mailto",                                 decoded => "mailto",                                 normalized => "mailto" },
+       to        => { origin => ["bogus\@email.com","bogus2\@email.com"], decoded => ["bogus\@email.com","bogus2\@email.com"], normalized => ["bogus\@email.com","bogus2\@email.com"]},
    },
-   "mailto:bogus\@email.com?subject=test" => {
-       scheme    => { origin => "mailto",                               decoded => "mailto",                               normalized => "mailto" },
+   "mailto:bogus\@email.com,bogus2\@email.com?subject=test" => {
+       scheme    => { origin => "mailto",                                 decoded => "mailto",                                 normalized => "mailto" },
+       to        => { origin => ["bogus\@email.com","bogus2\@email.com"], decoded => ["bogus\@email.com","bogus2\@email.com"], normalized => ["bogus\@email.com","bogus2\@email.com"]},
+       headers   => {
+           origin => [
+               {subject => "test"}
+               ],
+           decoded => [
+               {subject => "test"}
+               ],
+           normalized => [
+               {SUBJECT => "test"}
+               ]
+       },
    },
-   "mailto:bogus\@email.com?subject=test%20subject&body=This%20is%20the%20body%20of%20this%20message." => {
-       scheme    => { origin => "mailto",                               decoded => "mailto",                               normalized => "mailto" },
-   },
-   "mailto:bogus\@email.com?cc=bogus2\@snail-mail.com&bcc=fake\@spam.com" => {
-       scheme    => { origin => "mailto",                               decoded => "mailto",                               normalized => "mailto" },
-   },
+   "mailto:bogus\@email.com,bogus2\@email.com?subject=test%20subject&body=This%20is%20the%20body%20of%20this%20message." => {
+       scheme    => { origin => "mailto",                                 decoded => "mailto",                                 normalized => "mailto" },
+       to        => { origin => ["bogus\@email.com","bogus2\@email.com"], decoded => ["bogus\@email.com","bogus2\@email.com"], normalized => ["bogus\@email.com","bogus2\@email.com"]},
+       headers   => {
+           origin => [
+               {subject => "test%20subject"},
+               {body => "This%20is%20the%20body%20of%20this%20message."}
+               ],
+           decoded => [
+               {subject => "test subject"},
+               {body => "This is the body of this message."}
+               ],
+           normalized => [
+               {SUBJECT => "test%20subject"},
+               {BODY => "This%20is%20the%20body%20of%20this%20message."}
+               ]
+       },
+   }
   );
 
 foreach my $origin (sort keys %DATA) {
