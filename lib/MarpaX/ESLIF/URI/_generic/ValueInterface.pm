@@ -44,10 +44,7 @@ sub AUTOLOAD {
   #
   # We create it inlined with performance in mind
   #
-  fresh $method => eval "sub {
-    my (\$self, \@args) = \@_;
-    return \$\$self->$method(\@args)
-  }";
+  fresh $method => eval "sub { my (\$self, \@args) = \@_; return \$\$self->$method(\@args) }"; ## no critic
   goto &$method
 }
 
