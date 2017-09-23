@@ -10,6 +10,14 @@ package MarpaX::ESLIF::URI::_generic::RecognizerInterface;
 # ABSTRACT: MarpaX::ESLIF's URI Recognizer Interface
 
 #
+# This class is very internal and should not harm Pod coverage test
+#
+
+=for Pod::Coverage *EVERYTHING*
+
+=cut
+
+#
 # Optimized constructor
 #
 sub new { bless \$_[1], $_[0] }

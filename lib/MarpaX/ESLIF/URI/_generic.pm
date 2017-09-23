@@ -57,6 +57,14 @@ Instantiate a new object, or croak on failure. Takes as parameter an URI that wi
 
 =cut
 
+#
+# BUILDARGS is completely internal
+#
+
+=for Pod::Coverage BUILDARGS
+
+=cut
+
 sub BUILDARGS {
   my ($class, @args) = @_;
 
@@ -64,6 +72,14 @@ sub BUILDARGS {
 
   return { _origin => $args[0] }
 }
+
+#
+# BUILD is completely internal
+#
+
+=for Pod::Coverage BUILD
+
+=cut
 
 sub BUILD {
     my ($self) = @_;

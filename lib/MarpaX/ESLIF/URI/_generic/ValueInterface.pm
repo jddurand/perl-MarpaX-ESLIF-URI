@@ -15,6 +15,14 @@ use Carp qw/croak/;
 use vars qw/$AUTOLOAD/;
 use Class::Method::Modifiers qw/fresh/;
 
+#
+# This class is very internal and should not harm Pod coverage test
+#
+
+=for Pod::Coverage *EVERYTHING*
+
+=cut
+
 sub new {
   my ($class, $action_provider) = @_;
   croak 'action_provider must be a reference' unless ref($action_provider);
