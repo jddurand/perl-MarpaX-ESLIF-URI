@@ -1,13 +1,19 @@
 Changelog for MarpaX-ESLIF-URI
 
-0.001 2017-08-03T02:46:23
+0.002 2017-09-23T03:26:07
+ [Jean-Damien Durand]
+ - xtest and trusted POD coverage [ci skip]
+ - ea protection, cosmetic code and POD fixes [ci skip]
+ - URI::mailto POD fix
+
+0.001 2017-08-03T02:46:45Z
  [Jean-Damien Durand]
  - xtest
  - base POD
  - perlcritic
  - Import
  - mailto dev+
- - / and ? added hfname and hfvalue
+ - and ? added hfname and hfvalue
  - hfname and hfvalue restrictions
  - <atext pct encoded> fix
  - case insensitive explicit pct encoded characters

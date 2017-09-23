@@ -78,7 +78,6 @@
             "IPC::Open3" : "0",
             "Test::Differences" : "0",
             "Test::More" : "0",
-            "blib" : "1.01",
             "perl" : "5.010"
          }
       }
@@ -86,30 +85,30 @@
    "provides" : {
       "MarpaX::ESLIF::URI" : {
          "file" : "lib/MarpaX/ESLIF/URI.pm",
-         "version" : "0.001"
+         "version" : "0.002"
       },
       "MarpaX::ESLIF::URI::file" : {
          "file" : "lib/MarpaX/ESLIF/URI/file.pm",
-         "version" : "0.001"
+         "version" : "0.002"
       },
       "MarpaX::ESLIF::URI::ftp" : {
          "file" : "lib/MarpaX/ESLIF/URI/ftp.pm",
-         "version" : "0.001"
+         "version" : "0.002"
       },
       "MarpaX::ESLIF::URI::http" : {
          "file" : "lib/MarpaX/ESLIF/URI/http.pm",
-         "version" : "0.001"
+         "version" : "0.002"
       },
       "MarpaX::ESLIF::URI::https" : {
          "file" : "lib/MarpaX/ESLIF/URI/https.pm",
-         "version" : "0.001"
+         "version" : "0.002"
       },
       "MarpaX::ESLIF::URI::mailto" : {
          "file" : "lib/MarpaX/ESLIF/URI/mailto.pm",
-         "version" : "0.001"
+         "version" : "0.002"
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "mailto" : "bug-MarpaX-ESLIF-URI@rt.cpan.org",
@@ -122,7 +121,7 @@
          "web" : "https://github.com/jddurand/perl-config-autoconf-ini"
       }
    },
-   "version" : "0.001",
+   "version" : "0.002",
    "x_authority" : "cpan:JDDPAUSE",
    "x_contributors" : [
       "Jean-Damien Durand <Jean-Damien.Durand@newaccess.ch>"
