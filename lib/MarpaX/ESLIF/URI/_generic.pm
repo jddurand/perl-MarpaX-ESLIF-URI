@@ -344,7 +344,7 @@ sub base {
 
 Returns the normalized string of C<$self>.
 
-Equivalent to C<$self->string('normalized')>.
+Equivalent to C<< $self->string('normalized') >>.
 
 =cut
 
@@ -358,7 +358,7 @@ sub normalized {
 
 Returns the decoded string of C<$self>.
 
-Equivalent to C<$self->string('decoded')>.
+Equivalent to C<< $self->string('decoded') >>.
 
 =cut
 
@@ -372,7 +372,7 @@ sub decoded {
 
 Returns a instance that converts C<$self> into C<$base> URI, or croak on failure.
 
-Default base is C<$self->base>.
+Default base is C<< $self->base >>.
 
 If C<$strict> is a true value, C<$self> is always considered relative to C<$base>, otherwise a new URI without C<$self>'s dot segments is returned when C<$self> has a scheme. Default is a true value.
 
@@ -473,10 +473,13 @@ Returns a instance that is the absolute version of current instance if possible,
 sub eq {
     my ($self, $other) = @_;
 
-    #
-    # Since we already do full normalization when valuating the parse tree, we use it
-    #
-    return $self->string('normalized') eq $other->string('normalized')
+    eval {
+        $other = MarpaX::ESLIF::URI->new($other) unless $other->$_isa(__PACKAGE__);
+        #
+        # Since we already do full normalization when valuating the parse tree, we use it
+        #
+        $self->string('normalized') eq $other->string('normalized')
+    }
 }
 
 =head2 $self->clone
@@ -601,7 +604,7 @@ sub _generic_getter {
 sub _generate_actions {
   my ($class, @attributes) = @_;
   #
-  # All the attributes have an associate explicit action called _action_$aattribute
+  # All the attributes have an associate explicit action called _action${attribute}
   #
   foreach my $attribute (@attributes) {
     my $method = "_action$attribute";
@@ -751,7 +754,7 @@ sub __encoded_percent_character {
 }
 sub __not_encoded_percent_character {
     #
-    # Normalized form is forced to '%25'
+    # Same as __encoded_percent_character(), except that origin is '%' character
     #
     return { origin => '%', decoded => '%', normalized => '%25'}
 }
@@ -769,7 +772,7 @@ sub __segment {
 }
 #
 # Exactly the same as ESLIF's ::concat built-in, but revisited
-# to work on original and decoded strings at the same time
+# to work on original, decoded and normalized strings at the same time
 #
 sub __concat {
     my ($self, @args) = @_;
@@ -777,8 +780,8 @@ sub __concat {
     my %rc = ( origin => '', decoded => '', normalized => '' );
     foreach my $arg (@args) {
         next unless ref($arg);
-        $rc{origin}    .= $arg->{origin} // '';
-        $rc{decoded}    .= $arg->{decoded} // '';
+        $rc{origin}     .= $arg->{origin}     // '';
+        $rc{decoded}    .= $arg->{decoded}    // '';
         $rc{normalized} .= $arg->{normalized} // '';
       }
     return \%rc
