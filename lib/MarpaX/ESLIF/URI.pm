@@ -89,7 +89,7 @@ Percent-encoded characters are decoded to ASCII characters corresponding to ever
 
 =head1 SEE ALSO
 
-L<MarpaX::ESLIF::URI::_generic>, L<MarpaX::ESLIF::URI::file>, L<MarpaX::ESLIF::URI::ftp>, L<MarpaX::ESLIF::URI::http>, L<MarpaX::ESLIF::URI::https>, L<MarpaX::ESLIF::URI::mailto>, 
+L<MarpaX::ESLIF::URI::_generic>, L<MarpaX::ESLIF::URI::file>, L<MarpaX::ESLIF::URI::ftp>, L<MarpaX::ESLIF::URI::http>, L<MarpaX::ESLIF::URI::https>, L<MarpaX::ESLIF::URI::mailto>
 
 =cut
 
