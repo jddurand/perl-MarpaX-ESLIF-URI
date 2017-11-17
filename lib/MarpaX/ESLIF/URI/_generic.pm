@@ -196,6 +196,20 @@ sub host {
     return $self->_generic_getter('_host', $type)
 }
 
+=head2 $self->hostname($type)
+
+Returns the hostname (without eventual C<[]> delimiters), or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub hostname {
+    my ($self, $type) = @_;
+
+    my $hostname = $self->_generic_getter('_host', $type);
+    $hostname =~ s/^\[(.*)\]$/$1/ if defined($hostname);
+    return $hostname
+}
+
 =head2 $self->ip($type)
 
 Returns the IP when host is such a literal, or undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
