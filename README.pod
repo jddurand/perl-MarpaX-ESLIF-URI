@@ -8,7 +8,7 @@ MarpaX::ESLIF::URI - URI as per RFC3986/RFC6874
 
 =head1 VERSION
 
-version 0.003
+version 0.004
 
 =head1 SYNOPSIS
 
