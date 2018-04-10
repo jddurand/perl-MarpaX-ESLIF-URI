@@ -132,6 +132,17 @@ sub __hfname {
   $rc
 }
 
+sub __domain {
+  my ($self, @args) = @_;
+
+  #
+  # <domain> is case-insensitive. OWASP recommends to convert to lowercase.
+  #
+  my $rc = $self->__concat(@args);
+  $rc->{normalized} = lc($rc->{normalized});
+  $rc
+}
+
 # -------------
 # Normalization
 # -------------
@@ -177,8 +188,8 @@ __DATA__
                             | <quoted string>
 
 <dtext no obs any>        ::= <dtext no obs>*
-<domain>                  ::= <dot atom text>
-                            | "[" <dtext no obs any> "]"
+<domain>                  ::= <dot atom text>                                                   action => __domain
+                            | "[" <dtext no obs any> "]"                                        action => __domain
 <dtext no obs>            ::= [\x{21}-\x{5A}\x{5E}-\x{7E}] # Printable US-ASCII or characters not including "[", "]", or "\"
 <hfname char>             ::= <unreserved>
                             | <hfname some delims>
