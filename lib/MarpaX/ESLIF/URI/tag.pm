@@ -14,14 +14,14 @@ use MarpaX::ESLIF;
 
 extends 'MarpaX::ESLIF::URI::mailto'; # inherit <addr spec> semantic
 
-has '_entity'    => (is => 'rwp', default => sub { { origin => '', decoded => '', normalized => '' } }); # Default is empty path ./..
-has '_authority' => (is => 'rwp', default => sub { { origin => '', decoded => '', normalized => '' } }); # Default is empty path ./..
-has '_date'      => (is => 'rwp', default => sub { { origin => '', decoded => '', normalized => '' } }); # Default is empty path ./..
+has '_entity'    => (is => 'rwp');
+has '_authority' => (is => 'rwp');
+has '_date'      => (is => 'rwp');
 
 #
 # All attributes starting with an underscore are the result of parsing
 #
-__PACKAGE__->_generate_actions(qw/_entity/);
+__PACKAGE__->_generate_actions(qw/_entity _authority _date/);
 
 #
 # Constants
@@ -69,43 +69,28 @@ sub entity {
     return $self->_generic_getter('_entity', $type)
 }
 
-# ------------------------
-# Specific grammar actions
-# ------------------------
-sub __entity {
-    my ($self, $authorityName, $comma, $date) = @_;
+=head2 $self->authority($type)
 
-    my $concat = $self->__concat($authorityName, $comma, $date);
-    map { $self->_entity->{$_} = $concat->{$_} } qw/origin decoded normalized/;
+Returns the tag authority. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
-    return $concat
+=cut
+
+sub authority {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_authority', $type)
 }
 
-sub __authority_DNSname {
-    my ($self, $DNSname) = @_;
+=head2 $self->date($type)
 
-    my $concat = $self->__concat($DNSname);
-    map { $self->_authority->{$_} = $concat->{$_} } qw/origin decoded normalized/;
+Returns the tag date. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
-    return $concat
-}
+=cut
 
-sub __authority_emailAddress {
-    my ($self, $emailAddress) = @_;
+sub date {
+    my ($self, $type) = @_;
 
-    my $concat = $self->__concat($emailAddress);
-    map { $self->_authority->{$_} = $concat->{$_} } qw/origin decoded normalized/;
-
-    return $concat
-}
-
-sub __date {
-    my ($self, @components) = @_;
-
-    my $concat = $self->__concat(@components);
-    map { $self->_date->{$_} = $concat->{$_} } qw/origin decoded normalized/;
-
-    return $concat
+    return $self->_generic_getter('_date', $type)
 }
 
 # -------------
@@ -132,12 +117,12 @@ __DATA__
 
 <tag scheme>              ::= "tag":i                                                         action => _action_scheme
 
-<tag entity>              ::= <tag authority> "," <tag date>                                  action => __entity
-<tag authority>           ::= DNSname                                                         action => __authority_DNSname
-                            | emailAddress                                                    action => __authority_emailAddress
-<tag date>                ::= year                                                            action => __date
-                            | year "-" month                                                  action => __date
-                            | year "-" month "-" day                                          action => __date
+<tag entity>              ::= <tag authority> "," <tag date>                                  action => _action_entity
+<tag authority>           ::= DNSname                                                         action => _action_authority
+                            | emailAddress                                                    action => _action_authority
+<tag date>                ::= year                                                            action => _action_date
+                            | year "-" month                                                  action => _action_date
+                            | year "-" month "-" day                                          action => _action_date
 year                      ::= DIGIT DIGIT DIGIT DIGIT
 month                     ::= DIGIT DIGIT
 day                       ::= DIGIT DIGIT
