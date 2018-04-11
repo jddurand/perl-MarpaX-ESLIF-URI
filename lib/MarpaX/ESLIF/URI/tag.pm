@@ -144,7 +144,7 @@ sub day {
 
 =head2 $self->dnsname($type)
 
-Returns the tag dnsname when entity is made from it. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+Returns the tag's DNS name when entity is made from it. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 As per RFC4151: "It is RECOMMENDED that the domain name should be in lowercase form. Alternative formulations of the same authority name will be counted as distinct".
 
