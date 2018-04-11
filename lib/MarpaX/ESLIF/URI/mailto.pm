@@ -136,7 +136,7 @@ sub __domain {
   my ($self, @args) = @_;
 
   #
-  # <domain> is case-insensitive. OWASP recommends to convert to lowercase.
+  # <domain> is case-insensitive.
   #
   my $rc = $self->__concat(@args);
   $rc->{normalized} = lc($rc->{normalized});
