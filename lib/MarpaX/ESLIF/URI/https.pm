@@ -31,7 +31,7 @@ BEGIN {
 
 =head1 SUBROUTINES/METHODS
 
-MarpaX::ESLIF::URI::https inherits, and eventually overwrites some, methods or MarpaX::ESLIF::URI::_generic.
+MarpaX::ESLIF::URI::https inherits, and eventually overwrites some, methods of MarpaX::ESLIF::URI::_generic.
 
 =head2 $class->bnf
 
