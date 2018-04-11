@@ -11,17 +11,23 @@ package MarpaX::ESLIF::URI::tag;
 
 use Class::Tiny::Antlers;
 use MarpaX::ESLIF;
+use DateTime;
 
 extends 'MarpaX::ESLIF::URI::mailto'; # inherit <addr spec> semantic
 
 has '_entity'    => (is => 'rwp');
 has '_authority' => (is => 'rwp');
 has '_date'      => (is => 'rwp');
+has '_year'      => (is => 'rwp');
+has '_month'     => (is => 'rwp');
+has '_day'       => (is => 'rwp');
+has '_dnsname'   => (is => 'rwp');
+has '_email'     => (is => 'rwp');
 
 #
 # All attributes starting with an underscore are the result of parsing
 #
-__PACKAGE__->_generate_actions(qw/_entity _authority _date/);
+__PACKAGE__->_generate_actions(qw/_entity _authority _date _year _month _day _dnsname _email/);
 
 #
 # Constants
@@ -83,14 +89,83 @@ sub authority {
 
 =head2 $self->date($type)
 
-Returns the tag date. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+Returns the tag date as a L<DateTime> object. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+Note that date in a tag URI is always expressed using UTC timezone.
 
 =cut
 
 sub date {
     my ($self, $type) = @_;
 
-    return $self->_generic_getter('_date', $type)
+    my $year  = $self->_generic_getter('_year',  $type); # Only year is required
+    return unless defined($year);                        # Indeed, there is no date
+    my $month = $self->_generic_getter('_month', $type) // '01';
+    my $day   = $self->_generic_getter('_day',   $type) // '01';
+
+    return DateTime->new(year => $year, month => $month, day => $day, time_zone => 'UTC')
+}
+
+=head2 $self->year($type)
+
+Returns the tag date's year. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub year {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_year', $type)
+}
+
+=head2 $self->month($type)
+
+Returns the tag date's month. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub month {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_month', $type)
+}
+
+=head2 $self->day($type)
+
+Returns the tag date's day. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub day {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_day', $type)
+}
+
+=head2 $self->dnsname($type)
+
+Returns the tag dnsname when entity is made from it. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+As per RFC4151: "It is RECOMMENDED that the domain name should be in lowercase form. Alternative formulations of the same authority name will be counted as distinct".
+
+=cut
+
+sub dnsname {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_dnsname', $type)
+}
+
+=head2 $self->email($type)
+
+Returns the tag email when entity is made from it. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub email {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_email', $type)
 }
 
 # -------------
@@ -103,7 +178,7 @@ Errata L<1485|https://www.rfc-editor.org/errata/eid1485> has been applied.
 
 =head1 SEE ALSO
 
-L<RFC4151|https://tools.ietf.org/html/rfc4151>, L<MarpaX::ESLIF::URI::_generic>
+L<RFC4151|https://tools.ietf.org/html/rfc4151>, L<MarpaX::ESLIF::URI::_generic>, L<DateTime>
 
 =cut
 
@@ -123,21 +198,21 @@ __DATA__
 <tag date>                ::= year                                                            action => _action_date
                             | year "-" month                                                  action => _action_date
                             | year "-" month "-" day                                          action => _action_date
-year                      ::= DIGIT DIGIT DIGIT DIGIT
-month                     ::= DIGIT DIGIT
-day                       ::= DIGIT DIGIT
-DNSname                   ::= DNScomp+ separator => "."
+year                      ::= DIGIT DIGIT DIGIT DIGIT                                         action => _action_year
+month                     ::= DIGIT DIGIT                                                     action => _action_month
+day                       ::= DIGIT DIGIT                                                     action => _action_day
+DNSname                   ::= DNScomp+ separator => "."                                       action => _action_dnsname
 DNScomp                   ::= alphaNum
                             | alphaNum DNSCompInner alphaNum
 DNSCompInnerUnit          ::= alphaNum
                             | "-"
 DNSCompInner              ::= DNSCompInnerUnit*
-emailAddress              ::= <addr spec>
+emailAddress              ::= <addr spec>                                                     action => _action_email
 alphaNum                  ::= DIGIT
                             | ALPHA
 <tag specific>            ::= <hier part> <URI query>
 <tag fragment>            ::= <URI fragment>
 
 #
-# <addr spec> is picked from the mailto bnf
+# mailto syntax, so <addr spec> and further the generic syntax as well, will be appended here
 #
