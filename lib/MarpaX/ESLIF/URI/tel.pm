@@ -164,7 +164,7 @@ sub cic_context {
 
 =head2 $self->parameters($type)
 
-Returns the parameters. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+Returns the parameters as an array of hashes that have the form { key => $key, value => $value }, where value may be undef, and with respect to the order of appearance in the URI. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
 
 =cut
 
@@ -396,11 +396,11 @@ Errata L<203|https://www.rfc-editor.org/errata/eid203> has been applied.
 
 =item
 
-Parameters other than isdn subaddress, extension and phone context will be reordered lexicographically using their normalized key (the original RFC states that they <B>MUST</B> appear originally in the correct order)
+Parameters are NOT reordered. So, since RFC3966 states that they B<MUST> appear lexicographically sorted (except for C<ext>, C<isdn> and C<phone-context>), the parsing will fail in the input does not respect this sorting rule.
 
 =item
 
-RFC4694 states required compliance with L<E.164|https://en.wikipedia.org/wiki/E.164>, and this is not checked.
+RFC4694 requires compliance with L<E.164|https://en.wikipedia.org/wiki/E.164> but this is not checked.
 
 
 =back
