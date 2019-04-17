@@ -3,7 +3,7 @@ use warnings FATAL => 'all';
 
 package MarpaX::ESLIF::URI::tel;
 
-# ABSTRACT: URI::tag syntax as per RFC3966
+# ABSTRACT: URI::tag syntax as per RFC3966, RFC4694
 
 # AUTHORITY
 
@@ -16,17 +16,19 @@ use MarpaX::ESLIF;
 extends 'MarpaX::ESLIF::URI::_generic';
 
 has '_subscriber'    => (is => 'rwp');
-has '_global_number' => (is => 'rwp');
-has '_local_number'  => (is => 'rwp');
-has '_context'       => (is => 'rwp');
-has '_descriptor'    => (is => 'rwp');
-has '_domainname'    => (is => 'rwp');
-has '_toplabel'      => (is => 'rwp');
+has '_number'        => (is => 'rwp');
+has '_ext'           => (is => 'rwp');
+has '_isub'          => (is => 'rwp');
+has '_phone_context' => (is => 'rwp');
+has '_rn'            => (is => 'rwp');
+has '_rn_context'    => (is => 'rwp');
+has '_cic'           => (is => 'rwp');
+has '_cic_context'   => (is => 'rwp');
 has '_parameters'    => (is => 'rwp', default => sub { { origin => [], decoded => [], normalized => [] } });
 #
 # All attributes starting with an underscore are the result of parsing
 #
-__PACKAGE__->_generate_actions(qw/_subscriber _global_number _local_number _context _descriptor _domainname _toplabel/);
+__PACKAGE__->_generate_actions(qw/_subscriber/);
 
 #
 # Constants
@@ -62,10 +64,120 @@ sub grammar {
   return $GRAMMAR;
 }
 
+=head2 $self->number($type)
+
+Returns the global or local number digits. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub number {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_number', $type)
+}
+
+=head2 $self->ext($type)
+
+Returns the extension, if any. May be undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub ext {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_ext', $type)
+}
+
+=head2 $self->isub($type)
+
+Returns the isdn sub-address, if any. May be undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub isub {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_isub', $type)
+}
+
+=head2 $self->phone_context($type)
+
+Returns the phone context, if any. May be undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub phone_context {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_phone_context', $type)
+}
+
+=head2 $self->rn($type)
+
+Returns the rn, if any. May be undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub rn {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_rn', $type)
+}
+
+
+=head2 $self->rn_context($type)
+
+Returns the rn context, if any. May be undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub rn_context {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_rn_context', $type)
+}
+
+
+=head2 $self->cic($type)
+
+Returns the cic, if any. May be undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub cic {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_cic', $type)
+}
+
+=head2 $self->cic_context($type)
+
+Returns the cic context, if any. May be undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub cic_context {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_cic_context', $type)
+}
+
+=head2 $self->parameters($type)
+
+Returns the parameters. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub parameters {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_parameters', $type)
+}
+
 # ------------------------
 # Specific grammar actions
 # ------------------------
-sub __number {
+sub __normalize_number {
     my ($self, @args) = @_;
 
     my $rc = $self->__concat(@args);
@@ -75,6 +187,12 @@ sub __number {
     $rc->{normalized} =~ s/[-.()]//g;
 
     return $rc
+}
+
+sub __number {
+    my ($self, @args) = @_;
+
+    return $self->{_number} = $self->__normalize_number(@args);
 }
 
 sub __pname {
@@ -205,21 +323,91 @@ sub __parameter {
     return $concat
 }
 
+my $semicolumn = { normalized => ';', origin => ';',  decoded => ';' };
+my $equal      = { normalized => '=', origin => '=',  decoded => '=' };
+sub __add_parameter {
+    my ($self, $name, $pvalue) = @_;
+
+    my %pname;
+    foreach my $type (qw/normalized origin decoded/) { # We normalized first to do the checks first -;
+        $pname{$type} = $name->{$type};
+        substr($pname{$type},  0, 1, '') if substr($pname{$type},  0, 1) eq ';';
+        substr($pname{$type}, -1, 1, '') if substr($pname{$type}, -1, 1) eq '=';
+    }
+
+    return $self->__parameter($semicolumn, \%pname, $equal, $pvalue)
+}
+
+sub __ext {
+    my ($self, $ext, $pvalue) = @_;
+
+    return $self->__add_parameter($ext, $self->{_ext} = $pvalue)
+}
+
+sub __isub {
+    my ($self, $isub, $pvalue) = @_;
+
+    return $self->__add_parameter($isub, $self->{_isub} = $pvalue)
+}
+
+sub __phone_context {
+    my ($self, $phone_context, $pvalue) = @_;
+
+    return $self->__add_parameter($phone_context, $self->{_phone_context} = $pvalue)
+}
+
+sub __rn {
+    my ($self, $rn, $pvalue) = @_;
+
+    return $self->__add_parameter($rn, $self->{_rn} = $pvalue)
+}
+
+sub __rn_context {
+    my ($self, $rn_context, $pvalue) = @_;
+
+    return $self->__add_parameter($rn_context, $self->{_rn_context} = $pvalue)
+}
+
+sub __npdi {
+    my ($self, $npdi) = @_;
+
+    return $self->__add_parameter($npdi)
+}
+
+sub __cic {
+    my ($self, $cic, $pvalue) = @_;
+
+    return $self->__add_parameter($cic, $self->{_cic} = $pvalue)
+}
+
+sub __cic_context {
+    my ($self, $cic_context, $pvalue) = @_;
+
+    return $self->__add_parameter($cic_context, $self->{_cic_context} = $pvalue)
+}
+
 =head1 NOTES
 
 =over
 
-=item Errata L<203|https://www.rfc-editor.org/errata/eid203> has been applied.
+=item
+
+Errata L<203|https://www.rfc-editor.org/errata/eid203> has been applied.
 
 =item
 
 Parameters other than isdn subaddress, extension and phone context will be reordered lexicographically using their normalized key (the original RFC states that they <B>MUST</B> appear originally in the correct order)
 
+=item
+
+RFC4694 states required compliance with L<E.164|https://en.wikipedia.org/wiki/E.164>, and this is not checked.
+
+
 =back
 
 =head1 SEE ALSO
 
-L<RFC3966|https://tools.ietf.org/html/rfc3966>, L<MarpaX::ESLIF::URI::_generic>
+L<RFC3966|https://tools.ietf.org/html/rfc3966>, L<RFC4694|https://tools.ietf.org/html/rfc4694>, L<MarpaX::ESLIF::URI::_generic>
 
 =cut
 
@@ -236,17 +424,17 @@ __DATA__
 <telephone subscriber>    ::= <global number>                                                 action => _action_subscriber
                             | <local number>                                                  action => _action_subscriber
 
-<global number>           ::= <global number digits> pars                                     action => _action_global_number
-<local number>            ::= <local number digits> pars context pars                         action => _action_local_number
+<global number>           ::= <global number digits> pars
+<local number>            ::= <local number digits> pars context pars
 pars                      ::= par*
 par                       ::= parameter
-                            | extension                                             rank => 1
-                            | <isdn subaddress>                                     rank => 1
-<isdn subaddress>         ::= ";" "isub" "=" <paramchar many>                                 action => __parameter
-extension                 ::= ";" "ext" "=" <phonedigit many>                                 action => __parameter
-context                   ::= ";" "phone-context" "=" descriptor                              action => __parameter
-descriptor                ::= domainname                                                      action => _action_descriptor
-                            | <global number digits>                                          action => _action_descriptor
+                            | extension
+                            | <isdn subaddress>
+<isdn subaddress>         ::= ";isub=" <paramchar many>                                       action => __isub
+extension                 ::= ";ext=" <phonedigit many>                                       action => __ext
+context                   ::= ";phone-context=" descriptor                                    action => __phone_context
+descriptor                ::= domainname
+                            | <global number digits>
 #
 # The <global number digits> and <local number digits> are ambiguous because
 # <phonedigit> contains DIGIT, and <phonedigit hex> contains HEXDIG
@@ -267,12 +455,15 @@ descriptor                ::= domainname                                        
 #                             | "#"
 <domainlabel and dot>     ::= domainlabel "."
 <domainlabels>            ::= <domainlabel and dot>*
-domainname                ::= <domainlabels> toplabel "."                                   action => _action_domainname
-                            | <domainlabels> toplabel                                       action => _action_domainname
+domainname                ::= <domainlabels> toplabel "."
+                            | <domainlabels> toplabel
 domainlabel               ::= /[A-Za-z0-9-](?:[A-Za-z0-9-]*[A-Za-z0-9])?/
-toplabel                  ::= /[A-Za-z](?:[A-Za-z0-9-]*[A-Za-z0-9])?/                       action => _action_toplabel
+toplabel                  ::= /[A-Za-z](?:[A-Za-z0-9-]*[A-Za-z0-9])?/
 parameter                 ::= ";" pname                                                     action => __parameter
                             | ";" pname "=" pvalue                                          action => __parameter
+                            | rn
+                            | cic
+                            | npdi
 pname                     ::= /[A-Za-z0-9-]+/                                               action => __pname
 pvalue                    ::= <paramchar many>
 paramchar                 ::= <param unreserved>
@@ -285,11 +476,31 @@ mark                      ::= [-_.!~*'()]
 <param unreserved>        ::= [\[\]/:&+$]
 phonedigit                ::= DIGIT
                             | <visual separator>
-<phonedigit many>         ::= phonedigit+                                                   action => __number
-<phonedigit hex>          ::= HEXDIG
-                            | [*#]
-                            | <visual separator>
-<phonedigit hex any>      ::= <phonedigit hex>*
+<phonedigit many>         ::= phonedigit+                                                   action => __normalize_number
 <visual separator>        ::= [-.()]
 alphanum                  ::= [A-Za-z0-9]
 <tel reserved>            ::= [;/?:@&=+$,]
+
+#
+## RFC 4694
+#
+rn                        ::= ";rn=" <global rn>                                            action => __rn
+                            | ";rn=" <local rn>                                             action => __rn
+npdi                      ::= ";npdi"                                                       action => __npdi
+cic                       ::= ";cic=" <global cic>                                          action => __cic
+                            | ";cic=" <local cic>                                           action => __cic
+<global rn>               ::= <global hex digits>
+# The first "hex-phonedigit" value in "local-rn" MUST be a hex-decimal digit.
+<local rn>                ::= HEXDIG <hex phonedigit any> <rn context>
+<rn context>              ::= ";rn-context=" <rn descriptor>                                action => __rn_context
+<rn descriptor>           ::= domainname
+                            | <global hex digits>
+<global hex digits>       ::= "+" /[0-9]{1,3}/ <hex phonedigit any>
+<hex phonedigit>          ::= HEXDIG
+                            | <visual separator>
+<global cic>              ::= <global hex digits>
+# The first "hex-phonedigit" value in "local-rn" MUST be a hex-decimal digit.
+<local cic>               ::= HEXDIG <hex phonedigit any> <cic context>
+<cic context>             ::= ";cic-context=" <rn descriptor>                               action => __cic_context
+
+<hex phonedigit any>      ::= <hex phonedigit>*                                             action => __normalize_number
