@@ -17,6 +17,10 @@ my %DATA =
    "Tel:+358-9-123-45678" => {
        scheme         => {              origin => "Tel",              decoded => "Tel",              normalized => "tel" },
        number         => {              origin => "+358-9-123-45678", decoded => "+358-9-123-45678", normalized => "+358912345678"},
+       is_global      => 1,
+       is_local       => undef,
+       has_npdi       => undef,
+       has_enumdi     => undef
    },
    "Tel:45678;phone-context=Example.Com" => {
        scheme         => {              origin => "Tel",              decoded => "Tel",              normalized => "tel" },
@@ -27,7 +31,11 @@ my %DATA =
            origin     =>   [ { key => "phone-context", value => "Example.Com" } ],
            decoded    =>   [ { key => "phone-context", value => "Example.Com" } ],
            normalized =>   [ { key => "phone-context", value => "Example.Com" } ]
-       }
+       },
+       is_global      => undef,
+       is_local       => 1,
+       has_npdi       => undef,
+       has_enumdi     => undef
    },
    "tel:+1-800-123-4567;cic=+1-6789" => {
        scheme         => {              origin => "tel",              decoded => "tel",              normalized => "tel" },
@@ -38,7 +46,11 @@ my %DATA =
            origin     =>   [ { key => "cic", value => "+1-6789" } ],
            decoded    =>   [ { key => "cic", value => "+1-6789" } ],
            normalized =>   [ { key => "cic", value => "+16789" } ]
-       }
+       },
+       is_global      => 1,
+       is_local       => undef,
+       has_npdi       => undef,
+       has_enumdi     => undef
    },
    "tel:+1-202-533-1234;npdi;rn=+1-202-544-0000" => {
        scheme         => {              origin => "tel",              decoded => "tel",              normalized => "tel" },
@@ -49,7 +61,11 @@ my %DATA =
            origin     =>   [ { key => 'npdi', value => undef }, { key => "rn", value => "+1-202-544-0000" } ],
            decoded    =>   [ { key => 'npdi', value => undef }, { key => "rn", value => "+1-202-544-0000" } ],
            normalized =>   [ { key => 'npdi', value => undef }, { key => "rn", value => "+12025440000" } ]
-       }
+       },
+       is_global      => 1,
+       is_local       => undef,
+       has_npdi       => 1,
+       has_enumdi     => undef
    },
    "tel:+1-202-533-6789;npdi" => {
        scheme         => {              origin => "tel",              decoded => "tel",              normalized => "tel" },
@@ -59,7 +75,11 @@ my %DATA =
            origin     =>   [ { key => 'npdi', value => undef } ],
            decoded    =>   [ { key => 'npdi', value => undef } ],
            normalized =>   [ { key => 'npdi', value => undef } ]
-       }
+       },
+       is_global      => 1,
+       is_local       => undef,
+       has_npdi       => 1,
+       has_enumdi     => undef
    },
    "tel:+1-202-533-6789;isub-encoding=nsap-ia5" => {
        scheme         => {              origin => "tel",              decoded => "tel",              normalized => "tel" },
@@ -70,7 +90,11 @@ my %DATA =
            origin     =>   [ { key => 'isub-encoding', value => "nsap-ia5" } ],
            decoded    =>   [ { key => 'isub-encoding', value => "nsap-ia5" } ],
            normalized =>   [ { key => 'isub-encoding', value => "nsap-ia5" } ]
-       }
+       },
+       is_global      => 1,
+       is_local       => undef,
+       has_npdi       => undef,
+       has_enumdi     => undef
    },
    "tel:+1-202-533-6789;enumdi" => {
        scheme         => {              origin => "tel",              decoded => "tel",              normalized => "tel" },
@@ -80,7 +104,11 @@ my %DATA =
            origin     =>   [ { key => 'enumdi', value => undef } ],
            decoded    =>   [ { key => 'enumdi', value => undef } ],
            normalized =>   [ { key => 'enumdi', value => undef } ]
-       }
+       },
+       is_global      => 1,
+       is_local       => undef,
+       has_npdi       => undef,
+       has_enumdi     => 1
    }
   );
 
@@ -89,16 +117,27 @@ foreach my $origin (sort keys %DATA) {
   isa_ok($uri, 'MarpaX::ESLIF::URI::tel', "\$uri = MarpaX::ESLIF::URI->new('$origin')");
   my $methods = $DATA{$origin};
   foreach my $method (sort keys %{$methods}) {
-    foreach my $type (sort keys %{$methods->{$method}}) {
-      my $got = $uri->$method($type);
-      my $expected = $methods->{$method}->{$type};
-      my $test_name = "\$uri->$method('$type')";
-      if (ref($expected)) {
-        eq_or_diff($got, $expected, "$test_name is " . (defined($expected) ? Dumper($expected) : "undef"));
+      if (ref($methods->{$method}) eq 'HASH') {
+          foreach my $type (sort keys %{$methods->{$method}}) {
+              my $got = $uri->$method($type);
+              my $expected = $methods->{$method}->{$type};
+              my $test_name = "\$uri->$method('$type')";
+              if (ref($expected)) {
+                  eq_or_diff($got, $expected, "$test_name is " . (defined($expected) ? Dumper($expected) : "undef"));
+              } else {
+                  is($got, $expected, "$test_name is " . (defined($expected) ? "'$expected'" : "undef"));
+              }
+          }
       } else {
-        is($got, $expected, "$test_name is " . (defined($expected) ? "'$expected'" : "undef"));
+          my $got = $uri->$method;
+          my $expected = $methods->{$method};
+          my $test_name = "\$uri->$method()";
+          if (ref($expected)) {
+              eq_or_diff($got, $expected, "$test_name is " . (defined($expected) ? Dumper($expected) : "undef"));
+          } else {
+              is($got, $expected, "$test_name is " . (defined($expected) ? "'$expected'" : "undef"));
+          }
       }
-    }
   }
 }
 

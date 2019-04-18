@@ -15,8 +15,9 @@ use MarpaX::ESLIF;
 
 extends 'MarpaX::ESLIF::URI::_generic';
 
-has '_subscriber'    => (is => 'rwp');
 has '_number'        => (is => 'rwp');
+has '_is_global'     => (is => 'rwp');
+has '_is_local'      => (is => 'rwp');
 has '_ext'           => (is => 'rwp');
 has '_isub'          => (is => 'rwp');
 has '_isub_encoding' => (is => 'rwp');
@@ -25,11 +26,9 @@ has '_rn'            => (is => 'rwp');
 has '_rn_context'    => (is => 'rwp');
 has '_cic'           => (is => 'rwp');
 has '_cic_context'   => (is => 'rwp');
+has '_has_npdi'      => (is => 'rwp');
+has '_has_enumdi'    => (is => 'rwp');
 has '_parameters'    => (is => 'rwp', default => sub { { origin => [], decoded => [], normalized => [] } });
-#
-# All attributes starting with an underscore are the result of parsing
-#
-__PACKAGE__->_generate_actions(qw/_subscriber/);
 
 #
 # Constants
@@ -75,6 +74,30 @@ sub number {
     my ($self, $type) = @_;
 
     return $self->_generic_getter('_number', $type)
+}
+
+=head2 $self->is_global()
+
+Returns a true value if number is global, else a false value.
+
+=cut
+
+sub is_global {
+    my ($self) = @_;
+
+    return $self->{_is_global}
+}
+
+=head2 $self->is_local()
+
+Returns a true value if number is local, else a false value.
+
+=cut
+
+sub is_local {
+    my ($self) = @_;
+
+    return $self->{_is_local}
 }
 
 =head2 $self->ext($type)
@@ -175,6 +198,30 @@ sub cic_context {
     return $self->_generic_getter('_cic_context', $type)
 }
 
+=head2 $self->has_npdi()
+
+Returns a true value if the URI has the npdi parameter, else a false value.
+
+=cut
+
+sub has_npdi {
+    my ($self) = @_;
+
+    return $self->{_has_npdi}
+}
+
+=head2 $self->has_enumdi()
+
+Returns a true value if the URI has the enumdi parameter, else a false value.
+
+=cut
+
+sub has_enumdi {
+    my ($self) = @_;
+
+    return $self->{_has_enumdi}
+}
+
 =head2 $self->parameters($type)
 
 Returns the parameters as an array of hashes that have the form { key => $key, value => $value }, where value may be undef, and with respect to the order of appearance in the URI. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
@@ -206,6 +253,22 @@ sub __number {
     my ($self, @args) = @_;
 
     return $self->{_number} = $self->__normalize_number(@args);
+}
+
+sub __global {
+    my ($self, @args) = @_;
+
+    $self->{_is_global} = 1;
+
+    return $self->__concat(@args)
+}
+
+sub __local {
+    my ($self, @args) = @_;
+
+    $self->{_is_local} = 1;
+
+    return $self->__concat(@args)
 }
 
 sub __pname {
@@ -384,6 +447,8 @@ sub __rn_context {
 sub __npdi {
     my ($self, $npdi) = @_;
 
+    $self->{_has_npdi} = 1;
+
     return $self->__add_parameter($npdi)
 }
 
@@ -407,6 +472,8 @@ sub __isub_encoding {
 
 sub __enumdi {
     my ($self, $enumdi) = @_;
+
+    $self->{_has_enumdi} = 1;
 
     return $self->__add_parameter($enumdi)
 }
@@ -449,11 +516,11 @@ __DATA__
 
 <telephone scheme>        ::= "tel":i                                                         action => _action_scheme
 
-<telephone subscriber>    ::= <global number>                                                 action => _action_subscriber
-                            | <local number>                                                  action => _action_subscriber
+<telephone subscriber>    ::= <global number>
+                            | <local number>
 
-<global number>           ::= <global number digits> pars
-<local number>            ::= <local number digits> pars context pars
+<global number>           ::= <global number digits> pars                                     action => __global
+<local number>            ::= <local number digits> pars context pars                         action => __local
 pars                      ::= par*
 par                       ::= parameter
                             | extension
