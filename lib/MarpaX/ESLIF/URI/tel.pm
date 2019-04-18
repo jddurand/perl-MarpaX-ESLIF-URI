@@ -3,7 +3,7 @@ use warnings FATAL => 'all';
 
 package MarpaX::ESLIF::URI::tel;
 
-# ABSTRACT: URI::tel syntax as per RFC3966, RFC4694
+# ABSTRACT: URI::tel syntax as per RFC3966, RFC4694, RFC4715
 
 # AUTHORITY
 
@@ -19,6 +19,7 @@ has '_subscriber'    => (is => 'rwp');
 has '_number'        => (is => 'rwp');
 has '_ext'           => (is => 'rwp');
 has '_isub'          => (is => 'rwp');
+has '_isub_encoding' => (is => 'rwp');
 has '_phone_context' => (is => 'rwp');
 has '_rn'            => (is => 'rwp');
 has '_rn_context'    => (is => 'rwp');
@@ -98,6 +99,18 @@ sub isub {
     my ($self, $type) = @_;
 
     return $self->_generic_getter('_isub', $type)
+}
+
+=head2 $self->isub_encoding($type)
+
+Returns the isdn sub-address encoding for transmission, if any. May be undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub isub_encoding {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_isub_encoding', $type)
 }
 
 =head2 $self->phone_context($type)
@@ -386,6 +399,12 @@ sub __cic_context {
     return $self->__add_parameter($cic_context, $self->{_cic_context} = $pvalue)
 }
 
+sub __isub_encoding {
+    my ($self, $isub_encoding, $pvalue) = @_;
+
+    return $self->__add_parameter($isub_encoding, $self->{_isub_encoding} = $pvalue)
+}
+
 =head1 NOTES
 
 =over
@@ -402,12 +421,15 @@ Parameters are NOT reordered. So, since RFC3966 states that they B<MUST> appear 
 
 RFC4694 requires compliance with L<E.164|https://en.wikipedia.org/wiki/E.164> but this is not checked.
 
+=item
+
+L<ITU-T Q.1912.5|https://www.itu.int/rec/T-REC-Q.1912.5-201801-I> suggests that the C<isub encoding value> contains what the old L<RFC2396|https://tools.ietf.org/html/rfc2396> called the URI character, i.e. C<uric>.
 
 =back
 
 =head1 SEE ALSO
 
-L<RFC3966|https://tools.ietf.org/html/rfc3966>, L<RFC4694|https://tools.ietf.org/html/rfc4694>, L<MarpaX::ESLIF::URI::_generic>
+L<RFC3966|https://tools.ietf.org/html/rfc3966>, L<RFC4694|https://tools.ietf.org/html/rfc4694>, L<RFC4715|https://tools.ietf.org/html/rfc4715>, L<MarpaX::ESLIF::URI::_generic>
 
 =cut
 
@@ -461,9 +483,6 @@ domainlabel               ::= /[A-Za-z0-9-](?:[A-Za-z0-9-]*[A-Za-z0-9])?/
 toplabel                  ::= /[A-Za-z](?:[A-Za-z0-9-]*[A-Za-z0-9])?/
 parameter                 ::= ";" pname                                                     action => __parameter
                             | ";" pname "=" pvalue                                          action => __parameter
-                            | rn
-                            | cic
-                            | npdi
 pname                     ::= /[A-Za-z0-9-]+/                                               action => __pname
 pvalue                    ::= <paramchar many>
 paramchar                 ::= <param unreserved>
@@ -484,6 +503,9 @@ alphanum                  ::= [A-Za-z0-9]
 #
 ## RFC 4694
 #
+parameter                 ::= rn
+                            | cic
+                            | npdi
 rn                        ::= ";rn=" <global rn>                                            action => __rn
                             | ";rn=" <local rn>                                             action => __rn
 npdi                      ::= ";npdi"                                                       action => __npdi
@@ -504,3 +526,15 @@ cic                       ::= ";cic=" <global cic>                              
 <cic context>             ::= ";cic-context=" <rn descriptor>                               action => __cic_context
 
 <hex phonedigit any>      ::= <hex phonedigit>*                                             action => __normalize_number
+
+#
+# RFC4715
+#
+parameter                 ::= ";isub-encoding=" <isub encoding value>                       action => __isub_encoding
+#
+# No need to set "nsap-ia5", "nsap-bcd" or "nsap" explicitely: rfc4715token will catch them
+<isub encoding value>     ::= rfc4715token
+rfc4715token              ::= uric+
+uric                      ::= <unreserved>
+                            | <pct encoded>
+                            | [;?:@&=+$,/]
