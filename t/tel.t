@@ -71,6 +71,16 @@ my %DATA =
            decoded    =>   [ { key => 'isub-encoding', value => "nsap-ia5" } ],
            normalized =>   [ { key => 'isub-encoding', value => "nsap-ia5" } ]
        }
+   },
+   "tel:+1-202-533-6789;enumdi" => {
+       scheme         => {              origin => "tel",              decoded => "tel",              normalized => "tel" },
+       number         => {              origin => "+1-202-533-6789",  decoded => "+1-202-533-6789",  normalized => "+12025336789"},
+       parameters     =>
+       {
+           origin     =>   [ { key => 'enumdi', value => undef } ],
+           decoded    =>   [ { key => 'enumdi', value => undef } ],
+           normalized =>   [ { key => 'enumdi', value => undef } ]
+       }
    }
   );
 

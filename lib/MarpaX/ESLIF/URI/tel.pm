@@ -3,7 +3,7 @@ use warnings FATAL => 'all';
 
 package MarpaX::ESLIF::URI::tel;
 
-# ABSTRACT: URI::tel syntax as per RFC3966, RFC4694, RFC4715
+# ABSTRACT: URI::tel syntax as per RFC3966, RFC4694, RFC4715, RFC4759
 
 # AUTHORITY
 
@@ -405,6 +405,12 @@ sub __isub_encoding {
     return $self->__add_parameter($isub_encoding, $self->{_isub_encoding} = $pvalue)
 }
 
+sub __enumdi {
+    my ($self, $enumdi) = @_;
+
+    return $self->__add_parameter($enumdi)
+}
+
 =head1 NOTES
 
 =over
@@ -429,7 +435,7 @@ L<ITU-T Q.1912.5|https://www.itu.int/rec/T-REC-Q.1912.5-201801-I> suggests that 
 
 =head1 SEE ALSO
 
-L<RFC3966|https://tools.ietf.org/html/rfc3966>, L<RFC4694|https://tools.ietf.org/html/rfc4694>, L<RFC4715|https://tools.ietf.org/html/rfc4715>, L<MarpaX::ESLIF::URI::_generic>
+L<RFC3966|https://tools.ietf.org/html/rfc3966>, L<RFC4694|https://tools.ietf.org/html/rfc4694>, L<RFC4715|https://tools.ietf.org/html/rfc4715>, L<RFC4759|https://tools.ietf.org/html/rfc4759>, L<MarpaX::ESLIF::URI::_generic>
 
 =cut
 
@@ -538,3 +544,9 @@ rfc4715token              ::= uric+
 uric                      ::= <unreserved>
                             | <pct encoded>
                             | [;?:@&=+$,/]
+
+#
+## RFC 4759
+#
+parameter                 ::= enumdi
+enumdi                    ::= ";enumdi"                                                     action => __enumdi
