@@ -13,7 +13,7 @@ use Carp qw/croak/;
 use Class::Method::Modifiers qw/fresh around/;
 use Class::Tiny::Antlers;
 use Log::Any qw/$log/;
-use MarpaX::ESLIF;
+use MarpaX::ESLIF 3.0.9;
 use MarpaX::ESLIF::URI;   # Because of resolve()
 use MarpaX::ESLIF::URI::_generic::RecognizerInterface;
 use MarpaX::ESLIF::URI::_generic::ValueInterface;
