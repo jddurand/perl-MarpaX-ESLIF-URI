@@ -526,7 +526,7 @@ Errata L<203|https://www.rfc-editor.org/errata/eid203> has been applied.
 
 =item
 
-Parameters are NOT reordered. So, since RFC3966 states that they B<MUST> appear lexicographically sorted (except for C<ext>, C<isdn> and C<phone-context>), the parsing will fail in the input does not respect this sorting rule.
+Parameters are NOT reordered. So, since RFC3966 states that they B<MUST> appear in lexicographical order (except for C<ext>, C<isdn> and C<phone-context>), the parsing will fail in the input does not respect this sorting rule.
 
 =item
 
@@ -534,7 +534,7 @@ RFC4694 requires compliance with L<E.164|https://en.wikipedia.org/wiki/E.164> bu
 
 =item
 
-Any other extension, like premium rate category ("premrate" parameter), calling number verification ("verstat" parameter) etc... is not explicitely included unless an L<IETF|https://tools.ietf.org/> exists. Note that all known extensions are implicitly supported as long as their specification is just an extensions of the "parameter" or "par" rules.
+Any other extension, like premium rate category ("premrate" parameter), calling number verification ("verstat" parameter) etc... is not explicitly included unless an L<IETF|https://tools.ietf.org/> exists. Note that all known extensions are implicitly supported as long as their specification is just an extensions of the "parameter" or "par" rules.
 
 =back
 
@@ -656,7 +656,7 @@ cic                       ::= ";cic=":i <global cic>                            
 #
 parameter                 ::= ";isub-encoding=":i <isub encoding value>                     action => __isub_encoding
 #
-# No need to set "nsap-ia5", "nsap-bcd" or "nsap" explicitely: rfc4715token will catch them
+# No need to set "nsap-ia5", "nsap-bcd" or "nsap" explicitly: rfc4715token will catch them
 <isub encoding value>     ::= rfc4715token
 rfc4715token              ::= <uric many>
 
