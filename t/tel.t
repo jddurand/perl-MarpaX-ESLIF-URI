@@ -22,29 +22,29 @@ my %DATA =
        has_npdi       => undef,
        has_enumdi     => undef
    },
-   "Tel:45678;phone-context=Example.Com" => {
+   "Tel:(4)-5.678;PHONE-CONTEXT=Example.Com" => {
        scheme         => {              origin => "Tel",              decoded => "Tel",              normalized => "tel" },
-       number         => {              origin => "45678",            decoded => "45678",            normalized => "45678"},
-       phone_context  => {              origin => "Example.Com",      decoded => "Example.Com",      normalized => "Example.Com"},
+       number         => {              origin => "(4)-5.678",        decoded => "(4)-5.678",        normalized => "45678"},
+       phone_context  => {              origin => "Example.Com",      decoded => "Example.Com",      normalized => "example.com"},
        parameters     =>
        {
-           origin     =>   [ { key => "phone-context", value => "Example.Com" } ],
-           decoded    =>   [ { key => "phone-context", value => "Example.Com" } ],
-           normalized =>   [ { key => "phone-context", value => "Example.Com" } ]
+           origin     =>   [ { key => "PHONE-CONTEXT", value => "Example.Com" } ],
+           decoded    =>   [ { key => "PHONE-CONTEXT", value => "Example.Com" } ],
+           normalized =>   [ { key => "phone-context", value => "example.com" } ]
        },
        is_global      => undef,
        is_local       => 1,
        has_npdi       => undef,
        has_enumdi     => undef
    },
-   "tel:+1-800-123-4567;cic=+1-6789" => {
+   "tel:+1-800-123-4567;CIC=+1-6789" => {
        scheme         => {              origin => "tel",              decoded => "tel",              normalized => "tel" },
        number         => {              origin => "+1-800-123-4567",  decoded => "+1-800-123-4567",  normalized => "+18001234567"},
        cic            => {              origin => "+1-6789",          decoded => "+1-6789",          normalized => "+16789"},
        parameters     =>
        {
-           origin     =>   [ { key => "cic", value => "+1-6789" } ],
-           decoded    =>   [ { key => "cic", value => "+1-6789" } ],
+           origin     =>   [ { key => "CIC", value => "+1-6789" } ],
+           decoded    =>   [ { key => "CIC", value => "+1-6789" } ],
            normalized =>   [ { key => "cic", value => "+16789" } ]
        },
        is_global      => 1,
@@ -109,6 +109,19 @@ my %DATA =
        is_local       => undef,
        has_npdi       => undef,
        has_enumdi     => 1
+   },
+   "tel:5550100;phone-context=+1-630;tgrp=TG-1;trunk-context=Example.com" => {
+       scheme         => {              origin => "tel",              decoded => "tel",              normalized => "tel" },
+       number         => {              origin => "5550100",          decoded => "5550100",          normalized => "5550100"},
+       phone_context  => {              origin => "+1-630",           decoded => "+1-630",           normalized => "+1630"},
+       parameters     =>
+       {
+           origin     =>   [ { key => "phone-context", value => "+1-630" }, { key => 'tgrp', value => 'TG-1'}, { key => 'trunk-context', value => 'Example.com'} ],
+           decoded    =>   [ { key => "phone-context", value => "+1-630" }, { key => 'tgrp', value => 'TG-1'}, { key => 'trunk-context', value => 'Example.com'} ],
+           normalized =>   [ { key => "phone-context", value => "+1630" },  { key => 'tgrp', value => 'tg-1'}, { key => 'trunk-context', value => 'example.com'} ],
+       },
+       is_global      => undef,
+       is_local       => 1
    }
   );
 

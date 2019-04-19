@@ -3,7 +3,7 @@ use warnings FATAL => 'all';
 
 package MarpaX::ESLIF::URI::tel;
 
-# ABSTRACT: URI::tel syntax as per RFC3966, RFC4694, RFC4715, RFC4759
+# ABSTRACT: URI::tel syntax as per RFC3966, RFC4694, RFC4715, RFC4759, RFC4904
 
 # AUTHORITY
 
@@ -21,6 +21,8 @@ has '_is_local'      => (is => 'rwp');
 has '_ext'           => (is => 'rwp');
 has '_isub'          => (is => 'rwp');
 has '_isub_encoding' => (is => 'rwp');
+has '_tgrp'          => (is => 'rwp');
+has '_trunk_context' => (is => 'rwp');
 has '_phone_context' => (is => 'rwp');
 has '_rn'            => (is => 'rwp');
 has '_rn_context'    => (is => 'rwp');
@@ -136,6 +138,30 @@ sub isub_encoding {
     return $self->_generic_getter('_isub_encoding', $type)
 }
 
+=head2 $self->tgrp($type)
+
+Returns the trunk group, if any. May be undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub tgrp {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_tgrp', $type)
+}
+
+=head2 $self->trunk_context($type)
+
+Returns the trunk context, if any. May be undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
+
+=cut
+
+sub trunk_context {
+    my ($self, $type) = @_;
+
+    return $self->_generic_getter('_trunk_context', $type)
+}
+
 =head2 $self->phone_context($type)
 
 Returns the phone context, if any. May be undef. C<$type> is either 'decoded' (default value), 'origin' or 'normalized'.
@@ -237,7 +263,7 @@ sub parameters {
 # ------------------------
 # Specific grammar actions
 # ------------------------
-sub __normalize_number {
+sub __number {
     my ($self, @args) = @_;
 
     my $rc = $self->__concat(@args);
@@ -249,26 +275,22 @@ sub __normalize_number {
     return $rc
 }
 
-sub __number {
-    my ($self, @args) = @_;
-
-    return $self->{_number} = $self->__normalize_number(@args);
-}
-
 sub __global {
-    my ($self, @args) = @_;
+    my ($self, $global_number_digits, @rest) = @_;
 
     $self->{_is_global} = 1;
+    $self->{_number} = $global_number_digits;
 
-    return $self->__concat(@args)
+    return $self->__concat($global_number_digits, @rest)
 }
 
 sub __local {
-    my ($self, @args) = @_;
+    my ($self, $local_number_digits, @rest) = @_;
 
     $self->{_is_local} = 1;
+    $self->{_number} = $local_number_digits;
 
-    return $self->__concat(@args)
+    return $self->__concat($local_number_digits, @rest)
 }
 
 sub __pname {
@@ -277,7 +299,6 @@ sub __pname {
     # Normalized <pname> is case-insensitive.
     #
     my $rc = $self->__concat(@args);
-    $rc->{normalized} = lc($rc->{normalized});
 
     return $rc
 }
@@ -334,7 +355,7 @@ sub __parameter {
     #
     my $concat = $self->__concat($semicolumn, $pname, $equal, $pvalue);
 
-    foreach my $type (qw/normalized origin decoded/) { # We normalized first to do the checks first -;
+    foreach my $type (qw/normalized origin decoded/) { # C.f. __add_parameter for normalization
         my $key = $pname->{$type};
         my $value = defined($pvalue) ? $pvalue->{$type} : undef;
         #
@@ -405,10 +426,15 @@ sub __add_parameter {
     my ($self, $name, $pvalue) = @_;
 
     my %pname;
-    foreach my $type (qw/normalized origin decoded/) { # We normalized first to do the checks first -;
+    foreach my $type (qw/normalized origin decoded/) {
         $pname{$type} = $name->{$type};
         substr($pname{$type},  0, 1, '') if substr($pname{$type},  0, 1) eq ';';
         substr($pname{$type}, -1, 1, '') if substr($pname{$type}, -1, 1) eq '=';
+    }
+
+    $pname{normalized} = lc($pname{normalized});
+    if (defined($pvalue)) {
+        $pvalue->{normalized} = lc($pvalue->{normalized})
     }
 
     return $self->__parameter($semicolumn, \%pname, $equal, $pvalue)
@@ -424,6 +450,18 @@ sub __isub {
     my ($self, $isub, $pvalue) = @_;
 
     return $self->__add_parameter($isub, $self->{_isub} = $pvalue)
+}
+
+sub __tgrp {
+    my ($self, $tgrp, $pvalue) = @_;
+
+    return $self->__add_parameter($tgrp, $self->{_tgrp} = $pvalue)
+}
+
+sub __trunk_context {
+    my ($self, $trunk_context, $pvalue) = @_;
+
+    return $self->__add_parameter($trunk_context, $self->{_trunk_context} = $pvalue)
 }
 
 sub __phone_context {
@@ -496,13 +534,12 @@ RFC4694 requires compliance with L<E.164|https://en.wikipedia.org/wiki/E.164> bu
 
 =item
 
-L<ITU-T Q.1912.5|https://www.itu.int/rec/T-REC-Q.1912.5-201801-I> suggests that the C<isub encoding value> contains what the old L<RFC2396|https://tools.ietf.org/html/rfc2396> called the URI character, i.e. C<uric>.
-
+Any other extension, like premium rate category ("premrate" parameter), calling number verification ("verstat" parameter) etc... is not explicitely included unless an L<IETF|https://tools.ietf.org/> exists. Note that all known extensions are implicitly supported as long as their specification is just an extensions of the "parameter" or "par" rules.
 =back
 
 =head1 SEE ALSO
 
-L<RFC3966|https://tools.ietf.org/html/rfc3966>, L<RFC4694|https://tools.ietf.org/html/rfc4694>, L<RFC4715|https://tools.ietf.org/html/rfc4715>, L<RFC4759|https://tools.ietf.org/html/rfc4759>, L<MarpaX::ESLIF::URI::_generic>
+tel URI is totally case insensitive.
 
 =cut
 
@@ -525,9 +562,18 @@ pars                      ::= par*
 par                       ::= parameter
                             | extension
                             | <isdn subaddress>
-<isdn subaddress>         ::= ";isub=" <paramchar many>                                       action => __isub
-extension                 ::= ";ext=" <phonedigit many>                                       action => __ext
-context                   ::= ";phone-context=" descriptor                                    action => __phone_context
+                            | <trunk group>
+                            | <trunk context>
+<isdn subaddress>         ::= ";isub=":i <uric many>                                          action => __isub
+<trunk group>             ::= ";tgrp=":i <trunk group label>                                  action => __tgrp
+<trunk context>           ::= ";trunk-context=":i descriptor                                  action => __trunk_context
+<trunk group label unit>  ::= unreserved
+                            | <pct encoded>
+                            | <trunk group unreserved>
+<trunk group unreserved>  ::= [/&+$]
+<trunk group label>       ::= <trunk group label unit>+
+extension                 ::= ";ext=":i <phonedigit many>                                     action => __ext
+context                   ::= ";phone-context=":i descriptor                                  action => __phone_context
 descriptor                ::= domainname
                             | <global number digits>
 #
@@ -568,10 +614,14 @@ mark                      ::= [-_.!~*'()]
 <param unreserved>        ::= [\[\]/:&+$]
 phonedigit                ::= DIGIT
                             | <visual separator>
-<phonedigit many>         ::= phonedigit+                                                   action => __normalize_number
+<phonedigit many>         ::= phonedigit+                                                   action => __number
 <visual separator>        ::= [-.()]
 alphanum                  ::= [A-Za-z0-9]
 <tel reserved>            ::= [;/?:@&=+$,]
+uric                      ::= <unreserved>
+                            | <pct encoded>
+                            | <tel reserved>
+<uric many>               ::= uric+
 
 #
 ## RFC 4694
@@ -579,15 +629,15 @@ alphanum                  ::= [A-Za-z0-9]
 parameter                 ::= rn
                             | cic
                             | npdi
-rn                        ::= ";rn=" <global rn>                                            action => __rn
-                            | ";rn=" <local rn>                                             action => __rn
-npdi                      ::= ";npdi"                                                       action => __npdi
-cic                       ::= ";cic=" <global cic>                                          action => __cic
-                            | ";cic=" <local cic>                                           action => __cic
+rn                        ::= ";rn=":i <global rn>                                          action => __rn
+                            | ";rn=":i <local rn>                                           action => __rn
+npdi                      ::= ";npdi":i                                                     action => __npdi
+cic                       ::= ";cic=":i <global cic>                                        action => __cic
+                            | ";cic=":i <local cic>                                         action => __cic
 <global rn>               ::= <global hex digits>
 # The first "hex-phonedigit" value in "local-rn" MUST be a hex-decimal digit.
 <local rn>                ::= HEXDIG <hex phonedigit any> <rn context>
-<rn context>              ::= ";rn-context=" <rn descriptor>                                action => __rn_context
+<rn context>              ::= ";rn-context=":i <rn descriptor>                              action => __rn_context
 <rn descriptor>           ::= domainname
                             | <global hex digits>
 <global hex digits>       ::= "+" /[0-9]{1,3}/ <hex phonedigit any>
@@ -596,24 +646,21 @@ cic                       ::= ";cic=" <global cic>                              
 <global cic>              ::= <global hex digits>
 # The first "hex-phonedigit" value in "local-rn" MUST be a hex-decimal digit.
 <local cic>               ::= HEXDIG <hex phonedigit any> <cic context>
-<cic context>             ::= ";cic-context=" <rn descriptor>                               action => __cic_context
+<cic context>             ::= ";cic-context=":i <rn descriptor>                             action => __cic_context
 
-<hex phonedigit any>      ::= <hex phonedigit>*                                             action => __normalize_number
+<hex phonedigit any>      ::= <hex phonedigit>*                                             action => __number
 
 #
 # RFC4715
 #
-parameter                 ::= ";isub-encoding=" <isub encoding value>                       action => __isub_encoding
+parameter                 ::= ";isub-encoding=":i <isub encoding value>                     action => __isub_encoding
 #
 # No need to set "nsap-ia5", "nsap-bcd" or "nsap" explicitely: rfc4715token will catch them
 <isub encoding value>     ::= rfc4715token
-rfc4715token              ::= uric+
-uric                      ::= <unreserved>
-                            | <pct encoded>
-                            | [;?:@&=+$,/]
+rfc4715token              ::= <uric many>
 
 #
 ## RFC 4759
 #
 parameter                 ::= enumdi
-enumdi                    ::= ";enumdi"                                                     action => __enumdi
+enumdi                    ::= ";enumdi":i                                                   action => __enumdi
