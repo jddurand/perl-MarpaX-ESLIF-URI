@@ -535,6 +535,7 @@ RFC4694 requires compliance with L<E.164|https://en.wikipedia.org/wiki/E.164> bu
 =item
 
 Any other extension, like premium rate category ("premrate" parameter), calling number verification ("verstat" parameter) etc... is not explicitely included unless an L<IETF|https://tools.ietf.org/> exists. Note that all known extensions are implicitly supported as long as their specification is just an extensions of the "parameter" or "par" rules.
+
 =back
 
 =head1 SEE ALSO
